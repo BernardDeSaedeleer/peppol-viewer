@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.1 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.1/Peppol-Viewer-0.1.1.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.1)
+**[Télécharger Peppol Viewer 0.1.2 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.2/Peppol-Viewer-0.1.2.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.2)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -19,7 +19,7 @@ sans connexion Internet ; toutes les données restent sur votre ordinateur.
 
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.1/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.2/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -157,7 +157,7 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
 `node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
-`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.1`. Conserver chaque version
+`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.2`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.
