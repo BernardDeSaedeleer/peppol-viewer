@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Bernard De Saedeleer">
+  <meta name="application-name" content="Peppol Viewer">
+  <meta name="copyright" content="© 2026 Bernard De Saedeleer">
+  <meta name="description" content="Ouvrez vos factures et notes de crédit Peppol XML dans votre navigateur. Vos fichiers restent sur votre appareil.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Peppol Viewer — Vos factures, lisibles</title>
+  <link rel="author" href="https://www.linkedin.com/in/bernard-de-saedeleer-059070aa">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./parser.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">P<span>·</span></span><span>Peppol <strong>Viewer</strong></span></div>
+    <h1 id="welcome-title" class="header-tagline">Votre facture. <span>En clair.</span></h1>
+  </header>
+  <main>
+    <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+      <div id="drop-zone" class="drop-zone">
+        <div class="drop-chrome" aria-hidden="true">
+          <span class="panel-label"><span class="terminal-mark">›_</span> ZONE DE DÉPÔT</span>
+          <span class="format-label">XML / UBL</span>
+        </div>
+        <div class="drop-content">
+          <div class="file-visual" aria-hidden="true">
+            <span class="file-orbit"></span>
+            <span class="document-icon"></span>
+          </div>
+          <h2><span class="drop-idle">Déposez votre facture ici.</span><span class="drop-active">Relâchez pour l’ouvrir.</span></h2>
+          <button id="choose-file" class="button primary" type="button" aria-describedby="file-hint">Choisir un fichier <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <p id="file-hint" class="drop-baseline">Les documents acceptés sont des <strong>factures et notes de crédit XML UBL compatibles Peppol BIS Billing 3.0</strong>, à raison d’un fichier à la fois, avec une limite de <strong>5&nbsp;Mo et 2&nbsp;000&nbsp;lignes</strong>.</p>
+      </div>
+      <p class="local-note"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-9 0h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3Zm4 4v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>La conversion de votre facture ne nécessite aucune connexion Internet. Toutes les données restent sur votre ordinateur.</span></p>
+    </section>
+    <input id="file-input" type="file" accept=".xml,application/xml,text/xml" hidden>
+    <p id="error" class="error" role="alert" hidden></p>
+    <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+    <section id="preview" class="preview" aria-label="Aperçu de la facture" hidden>
+      <div class="toolbar">
+        <div class="file-info"><span class="file-type">XML</span><span id="file-name"></span></div>
+        <div class="toolbar-actions"><button id="close-invoice" class="button secondary" type="button">Fermer</button><button id="print" class="button primary" type="button">Imprimer / PDF</button></div>
+      </div>
+      <div id="warnings" class="warnings" hidden></div>
+      <article id="invoice" class="invoice" tabindex="-1" aria-label="Facture"></article>
+      <p class="preview-note">Aperçu du XML · La conformité Peppol n’est pas certifiée par cette visionneuse.</p>
+    </section>
+  </main>
+  <footer class="app-footer">
+    <div class="footer-links">
+      <a href="https://docs.peppol.eu/poacc/billing/3.0/" target="_blank" rel="noopener noreferrer" aria-label="Peppol BIS Billing 3.0 — documentation officielle (nouvel onglet)">Peppol BIS Billing 3.0 <span aria-hidden="true">↗</span></a>
+      <a href="https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html" target="_blank" rel="noopener noreferrer" aria-label="Format UBL — documentation officielle OASIS (nouvel onglet)">Format UBL <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="footer-meta">
+      <span class="copyright">© 2026 <a href="https://www.linkedin.com/in/bernard-de-saedeleer-059070aa" target="_blank" rel="author noopener noreferrer" aria-label="Bernard De Saedeleer — profil LinkedIn (nouvel onglet)">Bernard De Saedeleer</a></span>
+      <span class="release-badge" title="Version de cette copie de Peppol Viewer"><span id="app-version">v0.1.0</span><span>Version installée</span></span>
+    </div>
+  </footer>
+</body>
+</html>

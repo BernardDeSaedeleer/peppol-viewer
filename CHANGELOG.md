@@ -1,0 +1,20 @@
+# Historique de Peppol Viewer
+
+Chaque version distribuée conserve son numéro et ses fichiers. Les changements
+suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
+
+## 0.1.0 — 2026-10-20
+
+Version de préparation à la première distribution stable.
+
+- Lecture locale de factures et notes de crédit XML UBL compatibles Peppol BIS Billing 3.0.
+- Un fichier à la fois, jusqu’à 5 Mo et 2 000 lignes, avec dépôt et sélection de fichier.
+- Affichage des parties, lignes, taxes, remises, acomptes, paiements et références complémentaires.
+- Impression A4 et PDF par le navigateur ; bouton « Fermer » pour revenir à l’accueil.
+- Interface française et mascotte robot avec quatre expressions.
+- Badge « Version installée » dans le pied de page, synchronisé depuis `package.json`.
+- Attribution à Bernard De Saedeleer et lien LinkedIn dans le pied de page et les métadonnées.
+- Six exemples fictifs et cas invalides pour les essais.
+
+La validation finale des impressions PDF reste à effectuer dans les navigateurs
+visés avant de déclarer la version 1.0.0 stable.

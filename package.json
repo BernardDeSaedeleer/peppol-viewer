@@ -1,0 +1,24 @@
+{
+  "name": "peppol-viewer",
+  "version": "0.1.0",
+  "description": "Visionneuse locale de factures et notes de crédit XML UBL compatibles Peppol BIS Billing 3.0.",
+  "author": {
+    "name": "Bernard De Saedeleer",
+    "url": "https://www.linkedin.com/in/bernard-de-saedeleer-059070aa"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BernardDeSaedeleer/peppol-viewer.git"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "version:sync": "node scripts/version.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "0.9.12"
+  }
+}
