@@ -58,8 +58,10 @@ Déposer **un seul XML** (5 Mo et 2 000 lignes maximum), ou choisir un fichier.
 Déposer un fichier pendant la consultation remplace le document après lecture réussie.
 Une erreur conserve l’aperçu précédent et le signale explicitement.
 « Imprimer / PDF » utilise la boîte de dialogue du navigateur : sélectionner
-« Enregistrer au format PDF ». Pour une sortie propre, désactiver ses en-têtes/pieds
-de page si nécessaire. Les lignes d’un tableau large défilent horizontalement sur mobile.
+« Enregistrer au format PDF ». Choisir **A4**, **portrait**, une échelle de **100 %**
+et les **marges par défaut**. Désactiver les en-têtes/pieds de page automatiques
+du navigateur : la feuille de style prévoit son propre « Page x / y » dans les
+navigateurs compatibles. Les lignes d’un tableau large défilent horizontalement sur mobile.
 
 ## Exemples de démonstration
 
@@ -146,8 +148,8 @@ vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.1` : préversion publique actuelle, destinée aux premiers essais et retours utilisateurs.
-- `0.1.2` : exemple de correction suivante sans nouvelle fonctionnalité.
+- `0.1.2` : préversion actuelle, avec les corrections de présentation TVA et d’impression.
+- `0.1.3` : exemple de correction suivante sans nouvelle fonctionnalité.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.

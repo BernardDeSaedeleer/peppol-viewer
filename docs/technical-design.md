@@ -1,6 +1,6 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.1**, mise à jour le **20 octobre 2026**.
+État documenté : version applicative **0.1.2**, mise à jour le **20 octobre 2026**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -500,15 +500,35 @@ d’accessibilité ni une vérification avec lecteur d’écran.
 Le bouton « Imprimer / PDF » appelle uniquement `window.print()`. L’utilisateur
 choisit son imprimante ou l’enregistrement PDF dans la boîte de dialogue.
 
-Les règles CSS demandent du papier A4 avec marges de 14 mm, retirent la barre
+Les règles CSS demandent du papier A4 avec marges de 12 mm en haut et sur les côtés,
+et 16 mm en bas pour la numérotation. Elles retirent la barre
 d’actions, l’accueil, les décorations et les messages d’erreur, conservent les
 avertissements, réactivent l’affichage complet du tableau et demandent la répétition
-de ses en-têtes. Les lignes et certains blocs utilisent `break-inside: avoid`.
+de ses en-têtes. Les lignes et les totaux utilisent `break-inside: avoid-page`,
+avec les alias `page-break-*` pour les moteurs plus anciens. Le récapitulatif
+n’est plus indivisible : un long commentaire TVA peut continuer sur une autre page.
+Les titres restent associés au contenu suivant ; les notes longues utilisent
+`orphans` et `widows` plutôt qu’une interdiction de coupure de tout le paragraphe.
+
+Les zones `@bottom-left` et `@bottom-right` ajoutent le nom de l’application et
+« Page x / y ». Leur prise en charge est documentée pour
+[Chrome à partir de la version 131](https://developer.chrome.com/blog/print-margins).
+Les navigateurs ne prenant pas en charge ces zones continuent à imprimer la facture
+sans ce pied de page. Désactiver les en-têtes/pieds automatiques du navigateur pour
+éviter l’ajout de la date, du titre et de l’URL.
 
 Les montants, devises, quantités et en-têtes restent sur une seule ligne. Le tableau
 réserve aux colonnes numériques la largeur nécessaire à leur contenu ; les
 descriptions utilisent l’espace restant et peuvent revenir à la ligne. Les règles
 de mise en page mobile sont limitées au média `screen` pour ne pas modifier l’A4.
+Les libellés de TVA tels que « Exonération » ne sont jamais coupés, à l’écran comme
+sur papier. Le symbole pour cent est relié au taux par une espace insécable.
+
+Contrôle du 20 octobre 2026 : les six exemples ont été rendus dans le navigateur
+avec les styles d’impression à la largeur A4 (186 mm utiles), sans débordement
+horizontal. Le libellé « Exonération » tient sur une ligne à l’écran et en A4.
+Ce contrôle du CSS n’est pas un export PDF natif : les sauts de page, les en-têtes
+répétés et les compteurs doivent encore être vérifiés dans un PDF enregistré.
 
 Le navigateur reste responsable de la pagination ; un bloc plus grand qu’une page
 ne peut pas toujours rester indivisible. Le nom de fichier PDF, les en-têtes/pieds

@@ -33,7 +33,7 @@
     fragment.append(append(el('header', 'document-header'), heading, dates));
     fragment.append(append(el('div', 'parties'), partyBlock(data.supplier, 'Fournisseur'), partyBlock(data.customer, 'Client')));
     if (data.references.length) fragment.append(append(el('div', 'references'), ...data.references.map(([label, v]) => meta(label, v))));
-    const table = el('table');
+    const table = el('table', 'invoice-lines');
     const caption = el('caption', 'sr-only', 'Détail des lignes de la facture');
     const tr = el('tr');
     ['Description', 'Quantité', 'Prix HT', 'TVA', 'Total HT'].forEach((t, i) => { const th = el('th', i ? 'number' : '', t); th.scope = 'col'; tr.append(th); });
@@ -46,20 +46,20 @@
       const qty = append(el('td', 'number', decimal(line.quantity)), el('span', 'unit', units[line.unit] || line.unit));
       const price = el('td', 'number', m(line.price));
       if (line.priceBase) price.append(el('span', 'line-detail', `pour ${decimal(line.priceBase)} ${units[line.priceUnit || line.unit] || line.priceUnit || line.unit}`));
-      const tax = el('td', 'number', line.taxPercent ? decimal(line.taxPercent) + ' %' : line.taxCategory || '—');
-      if (line.taxCategory && line.taxCategory !== 'S') tax.append(el('span', 'line-detail', taxNames[line.taxCategory] || line.taxCategory));
+      const tax = el('td', 'number line-tax', line.taxPercent ? decimal(line.taxPercent) + '\u00a0%' : line.taxCategory || '—');
+      if (line.taxCategory && line.taxCategory !== 'S') tax.append(el('span', 'line-detail tax-label', taxNames[line.taxCategory] || line.taxCategory));
       body.append(append(el('tr'), description, qty, price, tax, el('td', 'number', m(line.amount))));
     });
     table.append(body);
     fragment.append(append(el('div', 'table-scroll'), table));
-    const taxSection = append(el('section'), el('h3', '', 'Détail de la TVA'));
+    const taxSection = append(el('section', 'tax-summary'), el('h3', '', 'Détail de la TVA'));
     const taxTable = el('table', 'tax-table');
     const taxHead = el('tr');
     ['Catégorie / taux', 'Base HT', 'TVA'].forEach((t, i) => { const th = el('th', i ? 'number' : '', t); th.scope = 'col'; taxHead.append(th); });
     taxTable.append(append(el('thead'), taxHead));
     const taxBody = el('tbody');
     data.taxes.forEach(t => {
-      taxBody.append(append(el('tr'), el('td', '', `${t.category || '—'}${t.percent ? ' · ' + decimal(t.percent) + ' %' : ''}`), el('td', 'number', m(t.base)), el('td', 'number', m(t.amount))));
+      taxBody.append(append(el('tr'), el('td', 'tax-rate', `${t.category || '—'}${t.percent ? ' · ' + decimal(t.percent) + '\u00a0%' : ''}`), el('td', 'number', m(t.base)), el('td', 'number', m(t.amount))));
     });
     taxTable.append(taxBody);
     taxSection.append(taxTable);

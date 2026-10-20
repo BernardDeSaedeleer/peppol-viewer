@@ -105,7 +105,24 @@ main { flex: 1; min-width: 0; width: 100%; }
 .preview{max-width:1050px;padding:25px 24px 40px;margin:auto}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:0 0 24px}.toolbar-actions{display:flex;gap:10px;flex-shrink:0}.file-info{display:flex;align-items:center;gap:10px;min-width:0;font-size:.875rem;color:var(--muted)}#file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-type{color:var(--accent);background:#e0eae8;border-radius:4px;font-size:.6875rem;font-weight:700;padding:5px}.invoice{max-width:850px;min-height:1000px;margin:auto;background:white;box-shadow:0 2px 8px #21353c0b,0 20px 50px #21353c07;padding:55px 54px;overflow-wrap:anywhere;outline:none;border-top:5px solid var(--accent)}.document-header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:28px}.document-kind{font-size:.75rem;letter-spacing:.13em;text-transform:uppercase;color:#36716b;font-weight:700}.invoice h2{font-size:2rem;font-weight:600;letter-spacing:-.04em;margin:10px 0 0}.document-dates{text-align:right;min-width:150px}.meta-label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:5px}.meta-value{font-size:.875rem;line-height:1.6}.document-dates .meta-label:not(:first-child){margin-top:12px}.parties{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin:30px 0}.invoice h3{font-size:.75rem;font-weight:650;letter-spacing:.08em;text-transform:uppercase;margin:0 0 13px;color:var(--muted)}.party-name{font-size:1.05rem;font-weight:650;margin:0 0 9px}.party p{margin:3px 0;font-size:.875rem;line-height:1.5;white-space:pre-line}.party .identifier{font-size:.8125rem;color:var(--muted);margin-top:8px}.references{display:flex;flex-wrap:wrap;gap:18px 30px;background:#f6f8f8;border-radius:5px;padding:15px 18px;margin:0 0 25px}.table-scroll{overflow-x:auto}.invoice table{border-collapse:collapse;width:100%;font-size:.8125rem;line-height:1.55}.invoice th{font-weight:600;color:var(--muted);font-size:.75rem;text-align:left;border-bottom:1px solid #a5b6bb;padding:10px 7px;white-space:nowrap}.invoice td{vertical-align:top;border-bottom:1px solid var(--line);padding:15px 7px}.invoice th:first-child,.invoice td:first-child{padding-left:0}.invoice th:last-child,.invoice td:last-child{padding-right:0}.invoice .number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.line-title{font-weight:600}.line-detail{display:block;color:var(--muted);font-size:.75rem;white-space:pre-line;margin-top:4px}.line-description{min-width:150px}.unit{color:var(--muted);font-size:.75rem;display:block}.summary{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:30px}.tax-table td,.tax-table th{padding:7px 5px}.tax-exemption{font-size:.75rem;color:var(--muted);line-height:1.5}.totals{margin:0}.total-row{display:flex;justify-content:space-between;gap:20px;font-size:.875rem;margin:0;padding:7px 0}.total-row dt{color:var(--muted)}.total-row dd{margin:0;font-variant-numeric:tabular-nums;white-space:nowrap}.total-row.emphasis{border-top:1px solid var(--line);margin-top:8px;padding-top:14px;font-weight:600}.total-row.due{padding:17px 14px;margin:14px -14px 0;background:var(--accent);color:white;border-radius:5px;font-size:1rem;font-weight:650}.total-row.due dt{color:white}.details-section{margin-top:28px;border-top:1px solid var(--line);padding-top:22px;font-size:.8125rem;line-height:1.6;white-space:pre-line}.details-section p{margin:4px 0}.payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.preview-note{text-align:center;color:var(--muted);font-size:.75rem;line-height:1.5;margin:23px 0 0}.error,.warnings{max-width:850px;margin:20px auto;padding:16px 20px;border-radius:7px;font-size:.875rem;line-height:1.6}.error{background:#fff0ee;color:#9a2920;border:1px solid #e6b6b1;width:calc(100% - 48px)}.warnings{background:#fff7e6;color:#75520d;border:1px solid #e9d6ac}.warnings p{margin:3px 0}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media screen and (max-width:700px){.app-header{padding:18px 20px;flex-wrap:wrap;gap:12px}.welcome{margin-top:42px}.toolbar{align-items:stretch;flex-direction:column;gap:13px}.toolbar-actions{display:flex;flex-wrap:wrap}.toolbar-actions .button{flex:1}.preview{padding:20px 12px}.invoice{padding:30px 22px;min-height:0}.document-header{gap:15px}.invoice h2{font-size:1.5rem}.parties{gap:20px}.summary{grid-template-columns:1fr;gap:24px}.payment-grid{grid-template-columns:1fr}.app-footer{flex-wrap:wrap}.invoice table{font-size:.8125rem}.document-dates{min-width:115px}.line-description{min-width:180px}}
 @media screen and (max-width:380px){.parties,.document-header{display:flex;flex-direction:column}.document-dates{text-align:left}}
-@page{size:A4;margin:14mm}
+/* Numeric columns keep their intrinsic width; only prose may split inside a word. */
+.invoice .number { width: 1%; overflow-wrap: normal; word-break: normal; }
+.invoice .number .line-detail { overflow-wrap: normal; word-break: normal; }
+.invoice .tax-label, .invoice .tax-rate { white-space: nowrap; overflow-wrap: normal; word-break: normal; hyphens: none; }
+@page {
+  size: A4;
+  margin: 12mm 12mm 16mm;
+  @bottom-left {
+    content: "Peppol Viewer";
+    font: 8pt Arial, sans-serif;
+    color: #596b70;
+  }
+  @bottom-right {
+    content: "Page " counter(page) " / " counter(pages);
+    font: 8pt Arial, sans-serif;
+    color: #596b70;
+  }
+}
 @media print {
   /* Match :root's specificity: it otherwise keeps the screen's font size and grey canvas. */
   :root { background: #fff; color: #000; font-size: 10pt; }
@@ -113,36 +130,40 @@ main { flex: 1; min-width: 0; width: 100%; }
   main { display: block; flex: none; }
   .app-header, .app-footer, .welcome, .toolbar, .preview-note, .error, #status { display: none !important; }
   .preview { padding: 0; margin: 0; width: 100%; max-width: none; }
-  .invoice { border: 0; box-shadow: none; width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.4; }
+  .invoice { border: 0; box-shadow: none; width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.4; orphans: 3; widows: 3; }
   .warnings { background: #fff; color: #000; border: 1px solid #777; font-size: 9pt; break-inside: avoid; margin: 0 0 4mm; padding: 2mm; }
   .document-header { gap: 6mm; padding-bottom: 3mm; }
   .document-header > div, .parties > *, .summary > *, .payment-grid > * { min-width: 0; }
   .document-kind, .invoice h3 { font-size: 8pt; }
-  .invoice h2 { font-size: 20pt; margin: 2mm 0 0; }
+  .invoice h2 { font-size: 18pt; margin: 2mm 0 0; }
   .document-dates { flex-shrink: 0; }
   .document-dates > div + div { margin-top: 2mm; }
   .meta-label { font-size: 8pt; margin-bottom: 1mm; }
   .meta-value { font-size: 9pt; line-height: 1.4; }
   .parties { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8mm; margin: 4mm 0; }
-  .invoice h3 { margin-bottom: 2mm; break-after: avoid; }
+  .invoice h3 { margin-bottom: 2mm; page-break-after: avoid; break-after: avoid-page; }
   .party p { font-size: 9.5pt; line-height: 1.35; margin: .5mm 0; }
   .party .party-name { font-size: 10pt; margin-bottom: 1.5mm; }
   .party .identifier { font-size: 8.5pt; margin-top: 1.5mm; }
   .references { background: #fff; border: 1px solid #ddd; gap: 2mm 6mm; padding: 3mm; margin: 0 0 4mm; }
-  .table-scroll { overflow: visible; }
-  .invoice table { font-size: 9pt; line-height: 1.4; table-layout: auto; }
+  .table-scroll { display: block; overflow: visible; }
+  .invoice table { font-size: 9pt; line-height: 1.4; table-layout: auto; page-break-inside: auto; break-inside: auto; }
   .invoice th { font-size: 8pt; white-space: nowrap; padding: 2mm 1.5mm; }
   .invoice td { padding: 2mm 1.5mm; }
   /* Reserve the intrinsic width of amounts and units; descriptions use the rest. */
   .invoice .number { width: 1%; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
-  /* Tax labels wrap between words, never into a narrow column of broken syllables. */
+  /* Price bases may wrap at spaces; tax labels always remain intact. */
   .invoice .number .line-detail { white-space: normal; overflow-wrap: normal; word-break: normal; }
+  .invoice .number .tax-label { white-space: nowrap; }
   .line-description { min-width: 0; }
   .line-detail, .unit, .tax-exemption { font-size: 8pt; }
   .line-detail { margin-top: 1mm; }
-  .invoice thead { display: table-header-group; }
-  .invoice tr, .parties, .summary, .document-header { break-inside: avoid; }
-  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7mm; margin-top: 5mm; }
+  .invoice thead { display: table-header-group; page-break-inside: avoid; break-inside: avoid-page; page-break-after: avoid; break-after: avoid-page; }
+  .invoice tbody { page-break-inside: auto; break-inside: auto; }
+  .invoice tr, .parties, .document-header, .totals { page-break-inside: avoid; break-inside: avoid-page; }
+  .document-header, .references { page-break-after: avoid; break-after: avoid-page; }
+  /* Keep the totals together, but allow a long VAT explanation to continue on the next page. */
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 7mm; margin-top: 5mm; page-break-inside: auto; break-inside: auto; }
   .invoice .tax-table th, .invoice .tax-table td { padding-top: 1.5mm; padding-bottom: 1.5mm; }
   .total-row { gap: 3mm; padding: 1mm 0; font-size: 9.5pt; }
   .total-row dd { flex-shrink: 0; overflow-wrap: normal; }
@@ -151,8 +172,10 @@ main { flex: 1; min-width: 0; width: 100%; }
   .total-row.due { margin: 3mm 0 0; padding: 2.5mm; background: #fff; color: #000; border: 1pt solid #153e3d; font-size: 10pt; }
   .total-row.due dt { color: #000; min-width: 0; }
   .details-section { margin-top: 2.5mm; padding-top: 2mm; font-size: 9pt; line-height: 1.4; break-inside: auto; orphans: 3; widows: 3; }
-  .details-section p { margin: .8mm 0; break-inside: avoid; }
+  .details-section p { margin: .8mm 0; orphans: 3; widows: 3; }
+  .details-section h3 + p { page-break-before: avoid; break-before: avoid-page; }
   .payment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5mm; }
+  .payment-grid > div { page-break-inside: avoid; break-inside: avoid-page; }
   .invoice, .invoice * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .app-footer a{color:inherit;text-underline-offset:3px}.app-footer a:hover{color:var(--accent)}.app-footer a:focus-visible{outline:3px solid #3c83b9;outline-offset:4px}

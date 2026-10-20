@@ -3,6 +3,19 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.2 — 2026-10-20
+
+- Libellés de TVA conservés sur une ligne à l’écran et à l’impression, notamment
+  « Exonération » ; espaces insécables entre les taux et le symbole pour cent.
+- Marges A4 rééquilibrées et titre plus compact pour laisser davantage de place
+  au contenu sans réduire la taille du texte des lignes.
+- En-têtes de tableau prévus pour se répéter, lignes et totaux protégés contre
+  les coupures ; les notes longues peuvent se poursuivre sur une autre page.
+- Pied de page avec « Page x / y » dans les navigateurs prenant en charge les
+  zones de marge CSS, notamment Chrome et Edge récents.
+- Contrôle des six exemples à la largeur A4 : aucun débordement horizontal.
+  La pagination effective du PDF exporté reste à valider dans le navigateur.
+
 ## 0.1.1 — 2026-10-20
 
 - Distribution simplifiée : seul `index.html` reste à la racine ; les cinq fichiers
