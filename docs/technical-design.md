@@ -1,6 +1,6 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.0**, mise à jour le **20 octobre 2026**.
+État documenté : version applicative **0.1.1**, mise à jour le **20 octobre 2026**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -79,7 +79,7 @@ factures par ce parcours.
 | [favicon.svg](../favicon.svg) | Icône statique locale |
 | [mascot.png](../mascot.png) | Quatre expressions de la mascotte, sélectionnées par CSS |
 | [scripts/serve.mjs](../scripts/serve.mjs) | Serveur HTTP local à liste de fichiers autorisés |
-| [scripts/build.mjs](../scripts/build.mjs) | Copie des six fichiers publics dans `dist/` |
+| [scripts/build.mjs](../scripts/build.mjs) | Prépare `dist/index.html` et le dossier `dist/assets/` |
 | [scripts/version.mjs](../scripts/version.mjs) | Synchronise la version du pied de page depuis `package.json` |
 | [tests/parser.test.mjs](../tests/parser.test.mjs) | Tests du lecteur et du formatage |
 | [tests/app.test.mjs](../tests/app.test.mjs) | Tests de l’application avec un adaptateur DOM Node |
@@ -650,15 +650,20 @@ ni contrôle de types, ni pipeline CI configuré dans le dépôt.
 
 ### 11.3 Livrable statique
 
-Le build crée `dist/` si nécessaire et y copie `index.html`, `styles.css`,
-`parser.js`, `app.js`, `favicon.svg` et `mascot.png`. Il ne compile, ne minifie et ne valide pas
-le code. Les tests sont donc une commande distincte.
+Le build synchronise la version et crée `dist/` si nécessaire. Il place uniquement
+`index.html` à la racine, et `styles.css`, `parser.js`, `app.js`, `favicon.svg` et
+`mascot.png` dans `dist/assets/`. Les quatre chemins de chargement de l’HTML sont
+réécrits vers `./assets/`. La mascotte reste à côté de la feuille de style qui la
+référence. Tous ces chemins restent relatifs et se résolvent aussi en `file://`.
+Le build ne compile, ne minifie et ne valide pas le code. Les tests sont donc une
+commande distincte ; ils contrôlent également les ressources de cette distribution.
 
-**Le build ne nettoie pas les fichiers déjà présents dans `dist/`.** Pour préparer
-une publication, construire dans un checkout propre ou vérifier que ce répertoire
-ne contient que les fichiers publics attendus. Ne jamais y déposer de facture,
-secret ou archive personnelle. Les répertoires source `docs/` et `tests/` ne font
-pas partie de la liste copiée.
+Le build retire uniquement les cinq anciens fichiers techniques directement sous
+`dist/`, après avoir écrit la nouvelle structure. Il ne supprime aucun autre fichier.
+Pour une publication, construire dans un checkout propre ou vérifier que la sortie
+contient seulement `index.html` et les cinq fichiers de `assets/`. Ne jamais y
+déposer de facture, secret ou archive personnelle. Les répertoires source `docs/`
+et `tests/` ne font pas partie de la distribution.
 
 Un hébergement statique peut distribuer le contenu de `dist/`, en conservant les
 chemins relatifs entre les six fichiers. L’application n’a besoin d’aucune variable
@@ -674,7 +679,7 @@ installées, les archives et les factures personnelles ne font pas partie du dé
 
 Avant une distribution, exécuter les tests, renseigner la version dans
 `package.json` et les changements dans `CHANGELOG.md`, puis construire `dist/`.
-Distribuer les six fichiers ensemble. Le code publié et les distributions restent
+Distribuer `index.html` et son dossier `assets/` ensemble. Le code publié et les distributions restent
 utilisables localement ; la présence du dépôt sur GitHub n’active aucun envoi de
 facture ni hébergement de l’application.
 

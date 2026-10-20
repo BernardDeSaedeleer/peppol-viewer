@@ -3,6 +3,14 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.1 — 2026-10-20
+
+- Distribution simplifiée : seul `index.html` reste à la racine ; les cinq fichiers
+  techniques sont regroupés dans `assets/`.
+- Liens relatifs adaptés pour conserver l’ouverture locale sans connexion Internet.
+- Le build retire les anciens fichiers techniques à la racine de `dist/` après
+  les avoir copiés dans `assets/` ; les autres fichiers éventuels sont conservés.
+
 ## 0.1.0 — 2026-10-20
 
 Version de préparation à la première distribution stable.

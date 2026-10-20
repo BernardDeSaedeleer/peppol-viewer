@@ -15,6 +15,11 @@ et les procédures d’exploitation.
 
 ## Utilisation locale
 
+Dans la version distribuée aux utilisateurs, ouvrir **`index.html`**. C’est le
+seul fichier à la racine, accompagné du dossier **`assets`** qui contient les
+scripts, les styles et les images. Conserver `index.html` et `assets` ensemble
+pour déplacer ou partager l’application. Il n’est pas nécessaire d’ouvrir `assets`.
+
 Ouvrir `index.html` dans un navigateur moderne. Aucun logiciel supplémentaire n’est
 nécessaire pour lire les factures. Les scripts sont classiques et fonctionnent aussi
 en `file://`.
@@ -91,7 +96,9 @@ pnpm build
 ```
 
 `node scripts/build.mjs` synchronise le numéro de version du pied de page, puis
-copie uniquement les six fichiers publics dans `dist/`.
+prépare `dist/index.html` et place les cinq fichiers techniques dans `dist/assets/`.
+Les chemins de l’HTML distribué sont adaptés automatiquement ; le chemin de la
+mascotte reste relatif à la feuille de style. Distribuer le contenu de `dist/`.
 `parser.js` lit et normalise le XML ; `app.js` gère les interactions et crée les éléments
 HTML avec `textContent`. `styles.css` contient les styles écran, mobile et A4.
 
@@ -114,21 +121,21 @@ dans le navigateur avec les factures habituelles de l’utilisateur.
 Le badge « Version installée » indique la version de la copie ouverte, y compris
 hors ligne. `package.json` est la source unique du numéro : ne pas modifier le badge
 manuellement. Il est synchronisé dans `index.html` au lancement du serveur local et
-à chaque build, puis inclus tel quel dans `dist/index.html`. Aucune connexion ni
+à chaque build, puis inclus dans `dist/index.html`. Aucune connexion ni
 vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.0` : version actuelle, encore en préparation avant une première version stable.
-- `0.1.1` : correction sans nouvelle fonctionnalité.
+- `0.1.1` : version actuelle, encore en préparation avant une première version stable.
+- `0.1.2` : exemple de correction suivante sans nouvelle fonctionnalité.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
 
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
-`node scripts/build.mjs`. Distribuer ensemble les six fichiers produits dans `dist/`
-dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.0`. Conserver chaque version
+`node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
+`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.1`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.
