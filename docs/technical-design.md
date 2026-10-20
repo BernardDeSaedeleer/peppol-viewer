@@ -527,8 +527,29 @@ sur papier. Le symbole pour cent est relié au taux par une espace insécable.
 Contrôle du 20 octobre 2026 : les six exemples ont été rendus dans le navigateur
 avec les styles d’impression à la largeur A4 (186 mm utiles), sans débordement
 horizontal. Le libellé « Exonération » tient sur une ligne à l’écran et en A4.
-Ce contrôle du CSS n’est pas un export PDF natif : les sauts de page, les en-têtes
-répétés et les compteurs doivent encore être vérifiés dans un PDF enregistré.
+Un contrôle complémentaire a été effectué le même jour sur le PDF natif fourni
+pour `05-facture-longue-48-lignes.xml` (facture `DEMO-2026-005`, version 0.1.2).
+Le fichier comporte cinq pages A4 portrait ; ses métadonnées indiquent le producteur
+`Microsoft: Print To PDF`. Les cinq pages ont été rendues et inspectées visuellement :
+
+| Page | Contenu constaté |
+| --- | --- |
+| 1 | En-tête de facture, parties, références et lignes 1 à 9 |
+| 2 | Lignes 10 à 23, en-têtes de colonnes répétés |
+| 3 | Lignes 24 à 37, en-têtes de colonnes répétés |
+| 4 | Lignes 38 à 48, en-têtes répétés, détail TVA et totaux regroupés |
+| 5 | Paiement et notes, avec un espace blanc important sous ces blocs |
+
+Aucune ligne tronquée, coupée entre deux pages ou manquante n’a été observée.
+Les taux `21 %` restent sur une ligne, les montants ne débordent pas et les pieds
+de page affichent correctement `Page 1 / 5` à `Page 5 / 5`. Le montant à payer
+reste groupé avec les autres totaux en page 4. Le paiement et les notes occupent
+une page distincte ; ce cas ne permet pas de conclure à une pagination minimale.
+
+Ce contrôle valide le rendu observé de cet exemple, pas tous les navigateurs ni
+tous les documents. La version du navigateur et les réglages exacts d’impression
+ne sont pas consignés dans le PDF. Le cas « Exonération » reste contrôlé à l’écran
+avec les styles A4, sans export PDF natif de cet exemple.
 
 Le navigateur reste responsable de la pagination ; un bloc plus grand qu’une page
 ne peut pas toujours rester indivisible. Le nom de fichier PDF, les en-têtes/pieds
@@ -611,8 +632,9 @@ navigateur, le document utilisé et le résultat obtenu :
    plusieurs taux et codes inconnus.
 3. Navigation clavier, annonces d’erreur au lecteur d’écran et zoom à 200 %.
 4. Affichage mobile et défilement du tableau sans perte d’information.
-5. Impression/PDF de factures courtes et longues, répétition des en-têtes,
-   coupures, avertissements et note de crédit.
+5. Compléter le contrôle PDF natif des 48 lignes consigné en section 8 avec des
+   factures courtes, une exonération, des avertissements, une note de crédit et
+   des descriptions très longues, dans les navigateurs visés.
 6. Ouverture directe en `file://`, chargement HTTP local et accès Sites.
 7. WebMCP natif si le navigateur expose cette capacité.
 8. Charge près des limites de taille/lignes et XML fortement imbriqué.
