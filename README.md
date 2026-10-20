@@ -4,6 +4,26 @@ Visionneuse française de factures et notes de crédit XML **Peppol BIS Billing 
 Un outil local pour déposer un XML, afficher une facture lisible et l’imprimer,
 avec une architecture KISS.
 
+## Télécharger et démarrer
+
+**[Télécharger Peppol Viewer 0.1.1 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.1/Peppol-Viewer-0.1.1.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.1)
+
+1. Téléchargez l’archive ci-dessus.
+2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
+3. Dans le dossier extrait, double-cliquez sur **index.html**.
+4. Déposez votre facture XML dans la zone de dépôt.
+
+Conservez **index.html** et le dossier **assets** ensemble. Aucun logiciel
+supplémentaire ni commande à exécuter : un navigateur suffit. La lecture fonctionne
+sans connexion Internet ; toutes les données restent sur votre ordinateur.
+
+Les six fichiers sont aussi disponibles séparément sur la page de la version,
+avec les instructions pour les placer dans les bons dossiers.
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.1/Mode-emploi.txt).
+
+Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
+La pagination PDF reste à vérifier selon le navigateur et le document.
+
 Auteur : [Bernard De Saedeleer](https://www.linkedin.com/in/bernard-de-saedeleer-059070aa).
 © 2026 Bernard De Saedeleer.
 
@@ -126,7 +146,7 @@ vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.1` : version actuelle, encore en préparation avant une première version stable.
+- `0.1.1` : préversion publique actuelle, destinée aux premiers essais et retours utilisateurs.
 - `0.1.2` : exemple de correction suivante sans nouvelle fonctionnalité.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
