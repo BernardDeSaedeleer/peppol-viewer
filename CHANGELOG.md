@@ -14,7 +14,10 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 - Pied de page avec « Page x / y » dans les navigateurs prenant en charge les
   zones de marge CSS, notamment Chrome et Edge récents.
 - Contrôle des six exemples à la largeur A4 : aucun débordement horizontal.
-  La pagination effective du PDF exporté reste à valider dans le navigateur.
+- Contrôle complémentaire du PDF natif de l’exemple de 48 lignes : cinq pages A4,
+  lignes intactes, en-têtes répétés, totaux regroupés et compteurs corrects.
+  Le paiement et les notes occupent la dernière page ; les autres cas d’impression
+  restent à vérifier dans les navigateurs visés.
 
 ## 0.1.1 — 2026-10-20
 
