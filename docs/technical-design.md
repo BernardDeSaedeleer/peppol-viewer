@@ -1,6 +1,6 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.2**, mise à jour le **20 octobre 2026**.
+État documenté : version applicative **0.1.3**, mise à jour le **20 octobre 2026**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -483,6 +483,13 @@ du XML reste traité localement par le lecteur.
 
 L’interface comporte deux sections d’une même page, pilotées par `hidden`. Aucun
 routeur n’est utilisé et le document ouvert n’est pas placé dans l’URL.
+
+Le pied de page rapproche le numéro de version installé d’un lien « GitHub · Versions »
+vers les [versions publiées](https://github.com/BernardDeSaedeleer/peppol-viewer/releases).
+La comparaison est manuelle ; aucun appel réseau ne vérifie les mises à jour.
+Le lien ouvre un nouvel onglet avec `noopener noreferrer`. Le logo GitHub est
+un SVG intégré au HTML, issu de Primer Octicons ; sa notice MIT est conservée
+dans un commentaire de `index.html` et concerne uniquement cette icône.
 
 | Élément | Mise en œuvre |
 | --- | --- |

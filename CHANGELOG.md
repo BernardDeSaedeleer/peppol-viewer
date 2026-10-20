@@ -3,6 +3,13 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.3 — 2026-10-20
+
+- Lien « GitHub · Versions » avec le logo GitHub dans le pied de page, à côté
+  de la version installée, pour consulter les versions et téléchargements publiés.
+- Icône intégrée au HTML : aucun chargement externe au démarrage. Le lien ouvre
+  GitHub dans un nouvel onglet uniquement lorsque l’utilisateur le sélectionne.
+
 ## 0.1.2 — 2026-10-20
 
 - Libellés de TVA conservés sur une ligne à l’écran et à l’impression, notamment
