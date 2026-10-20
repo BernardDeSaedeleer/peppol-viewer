@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.2 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.2/Peppol-Viewer-0.1.2.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.2)
+**[Télécharger Peppol Viewer 0.1.3 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.3/Peppol-Viewer-0.1.3.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.3)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -17,9 +17,13 @@ Conservez **index.html** et le dossier **assets** ensemble. Aucun logiciel
 supplémentaire ni commande à exécuter : un navigateur suffit. La lecture fonctionne
 sans connexion Internet ; toutes les données restent sur votre ordinateur.
 
+Pour vérifier les mises à jour, cliquez sur **GitHub · Versions** dans le pied de
+page et comparez les versions publiées au numéro de votre copie. Cette consultation
+nécessite Internet ; aucune vérification automatique n’est effectuée.
+
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.2/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.3/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -148,7 +152,7 @@ vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.2` : préversion actuelle, avec les corrections de présentation TVA et d’impression.
+- `0.1.3` : préversion actuelle, avec les corrections de présentation TVA et d’impression.
 - `0.1.3` : exemple de correction suivante sans nouvelle fonctionnalité.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
@@ -157,7 +161,7 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
 `node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
-`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.2`. Conserver chaque version
+`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.3`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.
