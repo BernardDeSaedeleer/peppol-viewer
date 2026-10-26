@@ -1,6 +1,6 @@
 {
   "name": "peppol-viewer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Visionneuse locale de factures et notes de crédit XML UBL compatibles Peppol BIS Billing 3.0.",
   "author": {
     "name": "Bernard De Saedeleer",
