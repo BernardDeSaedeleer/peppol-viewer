@@ -1,6 +1,6 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.3**, mise à jour le **20 octobre 2026**.
+État documenté : version applicative **0.1.4**, mise à jour le **26 octobre 2026**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -107,7 +107,11 @@ les scripts Node ; il ne transforme pas les scripts classiques de la page en mod
 
 ### 3.1 Du fichier à l’aperçu
 
-1. Le bouton déclenche le sélecteur natif. Sa valeur est remise à vide pour permettre
+1. Un clic dans la zone de dépôt déclenche le sélecteur natif. Le texte discret sous
+   le titre est porté par un bouton HTML sans apparence de bouton, dont la surface
+   cliquable est étendue à tout le panneau par CSS. Ce contrôle conserve l’activation
+   native par Entrée/Espace et un seul arrêt de tabulation ; son focus clavier
+   encadre le panneau. La valeur du sélecteur est remise à vide pour permettre
    de sélectionner à nouveau le même fichier.
 2. La sélection ou le dépôt appelle `openFiles(files)`. Les événements de dépôt sont
    écoutés sur `document`, y compris lorsqu’un aperçu est déjà affiché.

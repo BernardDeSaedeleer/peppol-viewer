@@ -3,6 +3,15 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.4 — 2026-10-26
+
+- Interface de dépôt simplifiée : le bouton visible « Choisir un fichier » devient
+  un petit texte sous « Déposez votre facture ici. ».
+- Toute la zone reste cliquable ; le glisser-déposer et l’activation native au
+  clavier sont conservés, avec un indicateur de focus autour du panneau.
+- Préparation depuis la dernière version GitHub : lien « GitHub · Versions »,
+  corrections TVA et mise en page PDF des versions 0.1.2/0.1.3 conservés.
+
 ## 0.1.3 — 2026-10-20
 
 - Lien « GitHub · Versions » avec le logo GitHub dans le pied de page, à côté
