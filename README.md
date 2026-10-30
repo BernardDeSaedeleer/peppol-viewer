@@ -126,7 +126,8 @@ belge. Ses dimensions s’adaptent à l’écran et à l’impression : il s’a
 L’application ne transmet aucun ordre et le contrôle de l’IBAN ne vérifie ni
 l’existence du compte ni son titulaire. Le bloc est prévu pour rester entier à
 l’impression. Le rendu à l’écran a été vérifié sur l’exemple 07, sur ordinateur
-et à la largeur mobile ; le **PDF natif de la v0.1.5 n’a pas été vérifié**.
+et à la largeur mobile. Un PDF A4 fourni par l’utilisateur a également été
+contrôlé : le bulletin reste entier en page 3, après les deux pages de facture.
 Les règles détaillées et les références Febelfin figurent dans la
 [conception technique](docs/technical-design.md#65-bulletin-daide-au-paiement).
 
@@ -181,8 +182,11 @@ fenêtre de 390 × 844 pixels, sans débordement horizontal. Son ouverture par W
 natif a réussi. L’arbre d’accessibilité expose les valeurs complètes et masque les
 cases décoratives ; aucun audit complet avec lecteur d’écran n’a été effectué.
 Une facture privée a également servi à contrôler localement le parseur, sans copie
-partagée. Le PDF natif reste non vérifié : aucun export exploitable n’a été obtenu
-pendant cette session. Les preuves et limites sont détaillées dans la
+partagée. Son PDF natif, produit par Microsoft Print To PDF et fourni ensuite par
+l’utilisateur, a été inspecté sur ses trois pages : aucune coupure ni superposition
+observée, bulletin entier et données de paiement conformes au XML. Ce contrôle
+porte sur cet exemplaire ; les autres navigateurs et réglages restent à vérifier.
+Les preuves et limites sont détaillées dans la
 [conception technique](docs/technical-design.md#103-contrôles-réalisés-pour-la-v015).
 
 ## Versionnement et publication

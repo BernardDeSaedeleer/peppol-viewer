@@ -30,10 +30,12 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
   Ce contrôle ne constitue pas un audit complet avec lecteur d’écran.
 - Contrôle local du parseur sur une facture privée : communication, montant,
   bénéficiaire et BIC vérifiés, sans copie partagée.
+- Contrôle complémentaire du PDF natif fourni par l’utilisateur : trois pages A4,
+  seize lignes de facture réparties sur les deux premières pages, en-tête du
+  tableau répété et bulletin entier en page 3. Couleurs, champs et numérotation
+  lisibles, sans coupure ni chevauchement observés. Les données de paiement
+  correspondent au XML ; navigateur et réglages exacts non connus.
 
-Le **PDF natif de la v0.1.5 reste non vérifié** : la demande d’impression dans le
-navigateur intégré n’a pas fourni de dialogue exploitable, puis le contrôle
-Windows a été interrompu car l’URL de l’onglet Edge ne pouvait pas être déterminée.
 La version reste en préparation et les téléchargements du README pointent vers
 la v0.1.4 publiée. Aucun document de facturation privé n’est ajouté au dépôt.
 

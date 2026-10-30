@@ -1,9 +1,9 @@
 # Peppol Viewer — Conception technique
 
 État documenté : version applicative **0.1.5 en préparation**, mise à jour le
-**30 octobre 2026**. Les tests et contrôles navigateur sont consignés en section 10 ;
-le PDF natif de cette version reste non vérifié. La dernière distribution publiée
-est la **0.1.4**.
+**30 octobre 2026**. Les tests et contrôles navigateur/PDF sont consignés en
+section 10, dont un PDF natif fourni par l’utilisateur. La dernière distribution
+publiée est la **0.1.4**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -600,8 +600,9 @@ Ses règles d’impression demandent de garder le bloc entier sur une même page
 de le reporter sur la suivante si nécessaire. Sa largeur s’adapte à la page A4 ;
 la présentation mobile ne fixe pas les dimensions d’un formulaire bancaire.
 Les contrôles à l’écran et en largeur mobile de ce bloc ont été réalisés sur
-l’exemple 07 ; leurs résultats figurent en section 10.3. Le PDF natif de la v0.1.5
-reste non vérifié. Les observations historiques ci-dessous concernent la v0.1.2.
+l’exemple 07 ; leurs résultats figurent en section 10.3. Un PDF natif fourni pour
+la v0.1.5 confirme le bulletin entier en page 3 après deux pages de facture.
+Les observations historiques ci-dessous concernent la v0.1.2.
 
 Les zones `@bottom-left` et `@bottom-right` ajoutent le nom de l’application et
 « Page x / y ». Leur prise en charge est documentée pour
@@ -755,18 +756,27 @@ Contrôles du **30 octobre 2026**, en complément des 37 tests automatisés :
 | Accessibilité | L’arbre d’accessibilité expose les valeurs complètes ; les cases décoratives sont masquées par `aria-hidden`. Aucun audit complet avec lecteur d’écran n’a été effectué |
 | WebMCP natif | Ouverture de l’exemple 07 réussie dans le navigateur intégré |
 | Facture privée | Vérification locale par le parseur de la communication, du montant, du bénéficiaire et du BIC ; aucune copie partagée |
-| Distribution | Archive ZIP créée et vérifiée : six fichiers dans la structure `index.html` / `assets`, identiques au build après comparaison SHA-256 |
-| PDF natif | **Non vérifié** pour la v0.1.5 ; aucun export PDF exploitable obtenu pendant la session |
+| Distribution | Archive ZIP créée et vérifiée : six fichiers dans la structure `index.html` / `assets`, identiques au build ; empreinte SHA-256 de l’archive calculée |
+| PDF natif | PDF privé fourni par l’utilisateur, trois pages A4 portrait produites par Microsoft Print To PDF : seize lignes sur les pages 1–2, bulletin entier en page 3, aucune coupure ni superposition observée |
 
-La demande d’impression dans le navigateur intégré n’a pas fourni de dialogue
-exploitable. Le contrôle Windows a ensuite été interrompu car l’URL de l’onglet
-Edge ne pouvait pas être déterminée. Ces tentatives ne démontrent ni la pagination
-réelle ni le maintien du bulletin entier dans un PDF. Le contrôle PDF A4, notamment
-après une facture longue, reste à effectuer. Les observations PDF de la v0.1.2
-consignées en section 8 ne valident pas le nouveau bulletin.
+Après une tentative d’impression automatisée sans résultat exploitable,
+l’utilisateur a fourni son PDF natif le 30 octobre 2026. Les trois pages ont été
+rendues en images et inspectées. L’en-tête du tableau est répété en page 2 ; les
+totaux, le paiement et les notes restent lisibles. Le bulletin occupe seul le haut
+de la page 3, sans coupure, avec fond saumon, repères rouges et police monospace.
+L’espace libre de la page 2 ne permettait pas d’y placer le bulletin entier.
+La numérotation « Page 1 / 3 » à « Page 3 / 3 » est correcte. Le montant, le
+bénéficiaire, l’IBAN, le BIC, l’échéance et la communication structurée du bulletin
+correspondent au XML source.
 
-Les constats ci-dessus portent sur cette session et cet exemple, sans validation générale des
-navigateurs. La vérification de la facture privée portait sur l’extraction des
+Les métadonnées indiquent Microsoft Print To PDF, mais pas la version du
+navigateur ni ses réglages exacts. L’extraction du texte par `pypdf` ne produit
+pas de texte sur cet exemplaire ; le contrôle du rendu est donc visuel. Ce
+résultat valide cette facture multipage, pas tous les documents ou navigateurs.
+Les contrôles historiques de la v0.1.2 en section 8 gardent leur portée propre.
+
+Les constats ci-dessus portent sur les documents contrôlés, sans validation générale des
+navigateurs. La vérification de la facture privée porte sur la restitution des
 valeurs, pas sur une authentification du bénéficiaire ou des coordonnées bancaires.
 Ni son XML, ni un PDF ou une capture contenant ses données ne sont ajoutés au
 dépôt, à une distribution ou à une publication. Les tests partagés utilisent des
