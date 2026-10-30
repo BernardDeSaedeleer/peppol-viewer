@@ -1,13 +1,17 @@
 # Factures fictives pour Peppol Viewer
 
-Ces fichiers sont entièrement synthétiques : sociétés, adresses, références et coordonnées de paiement sont inventées. Les identifiants « DEMO », « BE0000000000 » et « COMPTE-FICTIF-NE-PAS-PAYER » ne sont pas utilisables. Aucun paiement ni envoi sur le réseau Peppol ne doit être effectué.
+Ces fichiers utilisent des sociétés, adresses et références fictives. Les
+coordonnées de paiement sont inventées, sauf l’IBAN du spécimen public Febelfin
+repris dans l’exemple 07 pour tester sa clé de contrôle. Les identifiants « DEMO »,
+« BE0000000000 » et « COMPTE-FICTIF-NE-PAS-PAYER » ne sont pas utilisables.
+**Aucun paiement ni envoi sur le réseau Peppol ne doit être effectué.**
 
 Ils servent à tester le lecteur. Ils ne constituent pas des factures à émettre ni un jeu certifié conforme aux règles XSD/Schematron de Peppol. Les taux sont des scénarios d’affichage, pas des recommandations fiscales.
 
 ## Essayer les fichiers
 
 1. Ouvrir le site, ou le fichier index.html à la racine du projet.
-2. Glisser **un seul XML** dans la zone de dépôt, ou utiliser **Choisir un fichier**.
+2. Glisser **un seul XML** dans la zone de dépôt, ou cliquer dans la zone de dépôt.
 3. Vérifier le contenu et le montant attendu ci-dessous.
 4. Tester **Fermer** : l’accueil et la zone de dépôt réapparaissent. Déposer une autre facture, puis tester **Imprimer / PDF**. Choisir A4 et désactiver les en-têtes/pieds de page du navigateur si nécessaire.
 
@@ -19,6 +23,9 @@ Ils servent à tester le lecteur. Ils ne constituent pas des factures à émettr
 | 04-note-de-credit.xml | Note de crédit et référence à la facture d’origine | **121,00 EUR à créditer**, sans inversion automatique du signe |
 | 05-facture-longue-48-lignes.xml | Défilement, textes longs, tableau et impression sur plusieurs pages | 48 lignes ; HT 1 788,00 EUR ; à payer **2 163,48 EUR** |
 | 06-devise-usd-utf16.xml | UTF-16, accents, USD, exonération fictive, prix à 8 décimales par 100 unités et texte contenant des balises | **71,40 USD** ; prix 3,14159265 USD ; balises affichées comme texte ; référence ANNEXE-DEMO visible, sans avertissement de pièce jointe |
+| 07-bulletin-virement.xml | Bulletin et communication belge avec moyen de paiement non précisé (code 1) | **292,82 EUR** ; **+++202/6000/10195+++** ; bulletin à la fin du document |
+
+Le septième exemple utilise l’IBAN du spécimen public Febelfin (`BE68 5390 0754 7034`) pour exercer le contrôle de clé. Sa validité syntaxique ne signifie pas qu’un paiement est autorisé. **Ne pas payer**. La communication et les autres données restent fictives.
 
 ## Vérifier les erreurs
 

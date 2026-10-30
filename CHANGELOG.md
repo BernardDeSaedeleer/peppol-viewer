@@ -3,6 +3,40 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.5 — 2026-10-30 — En préparation
+
+- Bulletin d’aide au paiement en fin de facture, avec montant restant dû,
+  bénéficiaire, IBAN et communication. Présentation HTML/CSS sans dépendance :
+  fond saumon, repères rouges et police monospace, avec dimensions adaptatives.
+- Affichage limité aux factures en EUR, avec montant positif exact en centimes,
+  un seul moyen de paiement, un seul IBAN à clé valide et un bénéficiaire connu.
+  Codes admis : `30`, `58`, `42` ; code `1` ou absent uniquement si le compte est
+  belge et la communication structurée belge valide.
+- Aucun bulletin pour les avoirs, prélèvements, mandats, cartes, espèces,
+  factures soldées, devises autres que l’euro ou comptes multiples. La présence
+  d’un `CardAccount` est exclue même avec un code de virement ; plusieurs
+  identifiants bancaires dans un même compte empêchent aussi le bulletin.
+- Présentation des communications belges valides sous la forme
+  `+++ddd/dddd/ddddd+++`, sans modifier les autres références.
+- Bénéficiaire choisi parmi la partie bénéficiaire, le titulaire du compte, puis
+  le fournisseur. L’adresse du fournisseur n’est pas attribuée à un titulaire différent.
+- Bloc prévu pour rester entier à l’impression. Cette aide à la saisie n’est pas
+  un formulaire bancaire homologué et ne transmet aucun ordre de paiement.
+- **37 tests sur 37 passent** : 14 lecteur XML, 11 paiement, 10 application et
+  2 synchronisation des versions.
+- Exemple 07 contrôlé dans le navigateur intégré sur ordinateur et à 390 × 844
+  pixels, sans débordement horizontal. Ouverture WebMCP native réussie ; valeurs
+  complètes présentes dans l’arbre d’accessibilité, cases décoratives masquées.
+  Ce contrôle ne constitue pas un audit complet avec lecteur d’écran.
+- Contrôle local du parseur sur une facture privée : communication, montant,
+  bénéficiaire et BIC vérifiés, sans copie partagée.
+
+Le **PDF natif de la v0.1.5 reste non vérifié** : la demande d’impression dans le
+navigateur intégré n’a pas fourni de dialogue exploitable, puis le contrôle
+Windows a été interrompu car l’URL de l’onglet Edge ne pouvait pas être déterminée.
+La version reste en préparation et les téléchargements du README pointent vers
+la v0.1.4 publiée. Aucun document de facturation privé n’est ajouté au dépôt.
+
 ## 0.1.4 — 2026-10-26
 
 - Interface de dépôt simplifiée : le bouton visible « Choisir un fichier » devient

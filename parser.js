@@ -104,7 +104,7 @@
       adjustments: nodes(root, 'cac:AllowanceCharge').map(adjustment), totals,
       taxAmount: mainTax ? amount(mainTax, 'cbc:TaxAmount') : { value: '', currency },
       taxes: nodes(mainTax, 'cac:TaxSubtotal').map(t => ({ base: amount(t, 'cbc:TaxableAmount'), amount: amount(t, 'cbc:TaxAmount'), category: value(t, 'cac:TaxCategory/cbc:ID'), percent: value(t, 'cac:TaxCategory/cbc:Percent'), exemption: value(t, 'cac:TaxCategory/cbc:TaxExemptionReason') || value(t, 'cac:TaxCategory/cbc:TaxExemptionReasonCode') })),
-      payments: nodes(root, 'cac:PaymentMeans').map(p => ({ code: value(p, 'cbc:PaymentMeansCode'), reference: value(p, 'cbc:PaymentID'), account: value(p, 'cac:PayeeFinancialAccount/cbc:ID'), name: value(p, 'cac:PayeeFinancialAccount/cbc:Name'), bank: value(p, 'cac:PayeeFinancialAccount/cac:FinancialInstitutionBranch/cbc:ID'), mandate: value(p, 'cac:PaymentMandate/cbc:ID') })),
+      payments: nodes(root, 'cac:PaymentMeans').map(p => ({ code: value(p, 'cbc:PaymentMeansCode'), reference: value(p, 'cbc:PaymentID'), account: value(p, 'cac:PayeeFinancialAccount/cbc:ID'), accountCount: Math.max(nodes(p, 'cac:PayeeFinancialAccount').length, nodes(p, 'cac:PayeeFinancialAccount/cbc:ID').length), name: value(p, 'cac:PayeeFinancialAccount/cbc:Name'), bank: value(p, 'cac:PayeeFinancialAccount/cac:FinancialInstitutionBranch/cbc:ID'), mandate: value(p, 'cac:PaymentMandate/cbc:ID'), hasMandate: !!first(p, 'cac:PaymentMandate'), hasCardAccount: !!first(p, 'cac:CardAccount') })),
       terms: values(root, 'cac:PaymentTerms/cbc:Note'), notes: values(root, 'cbc:Note'), documents, warnings,
     };
     if (invoice.lines.some(l => !l.name || !l.quantity || !l.amount.value)) warnings.push('Certaines lignes sont incomplètes. Les données absentes sont indiquées par un tiret.');
@@ -129,6 +129,70 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
     return m ? `${m[3]}/${m[2]}/${m[1]}` : raw;
   }
+  function modulo97(digits) {
+    let remainder = 0;
+    for (const digit of digits) remainder = (remainder * 10 + digit.charCodeAt(0) - 48) % 97;
+    return remainder;
+  }
+  function checkedIban(account) {
+    const iban = String(account ?? '').replace(/\s/g, '').toUpperCase();
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return '';
+    if (iban.slice(2, 4) < '02' || iban.slice(2, 4) > '98') return '';
+    // A checksum alone also accepts invented countries or wrong national lengths.
+    // SWIFT IBAN Registry, release 103: https://www.swift.com/swift-resource/9606/download
+    const lengths = { AD: 24, AE: 23, AL: 28, AT: 20, AZ: 28, BA: 20, BE: 16, BG: 22, BH: 22, BI: 27,
+      BR: 29, BY: 28, CH: 21, CR: 22, CY: 28, CZ: 24, DE: 22, DJ: 27, DK: 18, DO: 28, EE: 20,
+      EG: 29, ES: 24, FI: 18, FK: 18, FO: 18, FR: 27, GB: 22, GE: 22, GI: 23, GL: 18, GR: 27,
+      GT: 28, HN: 28, HR: 21, HU: 28, IE: 22, IL: 23, IQ: 23, IS: 26, IT: 27, JO: 30, KW: 30,
+      KZ: 20, LB: 28, LC: 32, LI: 21, LT: 20, LU: 20, LV: 21, LY: 25, MC: 27, MD: 24, ME: 22,
+      MK: 19, MN: 20, MR: 27, MT: 31, MU: 30, NI: 28, NL: 18, NO: 15, OM: 23, PK: 24, PL: 28,
+      PS: 29, PT: 25, QA: 29, RO: 24, RS: 22, RU: 33, SA: 24, SC: 31, SD: 18, SE: 24, SI: 19,
+      SK: 24, SM: 27, SO: 23, ST: 25, SV: 28, TL: 23, TN: 24, TR: 26, UA: 29, VA: 22, VG: 24,
+      XK: 20, YE: 30 };
+    if (iban.length !== lengths[iban.slice(0, 2)]) return '';
+    if (iban.startsWith('BE') && !/^BE\d{14}$/.test(iban)) return '';
+    const digits = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, letter => String(letter.charCodeAt(0) - 55));
+    return modulo97(digits) === 1 ? iban : '';
+  }
+  function paymentReference(reference, account) {
+    const text = String(reference ?? '');
+    const unchanged = { text, structured: false };
+    if (!checkedIban(account).startsWith('BE')) return unchanged;
+    const trimmed = text.trim();
+    const body = trimmed.startsWith('+++') && trimmed.endsWith('+++') ? trimmed.slice(3, -3) : trimmed;
+    if (!/^[\d\s/.-]+$/.test(body)) return unchanged;
+    const digits = body.replace(/[\s/.-]/g, '');
+    if (!/^\d{12}$/.test(digits)) return unchanged;
+    const check = String(modulo97(digits.slice(0, 10)) || 97).padStart(2, '0');
+    if (digits.slice(10) !== check) return unchanged;
+    return { text: `+++${digits.slice(0, 3)}/${digits.slice(3, 7)}/${digits.slice(7)}+++`, structured: true };
+  }
+  function transferDetails(data) {
+    if (data?.credit !== false || data.currency !== 'EUR' || data.payments?.length !== 1) return null;
+    const payment = data.payments[0];
+    if (!payment || payment.hasMandate || payment.hasCardAccount || payment.mandate || (payment.accountCount !== undefined && payment.accountCount !== 1)) return null;
+    const account = checkedIban(payment.account);
+    if (!account) return null;
+    const reference = paymentReference(payment.reference, account);
+    const code = String(payment.code ?? '').trim();
+    // An undefined means is useful only when both Belgian payment clues agree.
+    if (!['30', '58', '42'].includes(code) && !(['1', ''].includes(code) && account.startsWith('BE') && reference.structured)) return null;
+    const amount = data.totals?.PayableAmount;
+    if (!amount || (amount.currency && amount.currency !== 'EUR')) return null;
+    const match = /^\+?(\d+)(?:\.(\d+))?$/.exec(String(amount.value ?? '').trim());
+    if (!match || /[1-9]/.test((match[2] || '').slice(2))) return null;
+    const euros = match[1].replace(/^0+(?=\d)/, '');
+    const cents = (match[2] || '').padEnd(2, '0').slice(0, 2);
+    if (!/[1-9]/.test(euros + cents)) return null;
+    const beneficiary = data.payee?.name || payment.name || data.supplier?.name || '';
+    if (!beneficiary) return null;
+    // Never borrow the supplier's address for a separately named beneficiary.
+    const party = data.payee?.name ? data.payee : beneficiary === data.supplier?.name ? data.supplier : null;
+    return {
+      beneficiary, address: [...(party?.address || [])], account: account.match(/.{1,4}/g).join(' '),
+      bank: payment.bank || '', reference, euros, cents, dueDate: data.dueDate || '',
+    };
+  }
   function decodeXml(buffer) {
     const bytes = new Uint8Array(buffer);
     if (bytes.byteLength > MAX_BYTES) throw new Error('Le fichier dépasse la limite de 5 Mo.');
@@ -143,5 +207,5 @@
     try { return new TextDecoder(encoding, { fatal: true }).decode(bytes); }
     catch { throw new Error('L’encodage du XML est inconnu ou invalide. Essayez un export UTF-8.'); }
   }
-  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, decodeXml, MAX_BYTES });
+  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, paymentReference, transferDetails, decodeXml, MAX_BYTES });
 })();

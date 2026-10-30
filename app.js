@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const { parseInvoice, money, decimal, date, decodeXml, MAX_BYTES } = globalThis.Peppol;
+  const { parseInvoice, money, decimal, date, decodeXml, paymentReference, transferDetails, MAX_BYTES } = globalThis.Peppol;
   const $ = id => document.getElementById(id);
   const homeTitle = document.title;
   let loadSequence = 0;
@@ -15,6 +15,41 @@
   }
   function append(parent, ...children) { parent.append(...children.filter(Boolean)); return parent; }
   function meta(label, val) { return append(el('div'), el('span', 'meta-label', label), el('span', 'meta-value', val || '—')); }
+  function transferBoxes(value, minimum = 0) {
+    const box = el('span', 'transfer-boxes');
+    // Screen readers get the complete value, not a sequence of isolated characters.
+    box.append(el('span', 'sr-only', value));
+    const cells = el('span', 'transfer-cells');
+    cells.setAttribute('aria-hidden', 'true');
+    if (value.length > 42) cells.append(el('span', 'transfer-long-value', value));
+    else [...value.padStart(minimum, ' ')].forEach(char => cells.append(el('span', 'transfer-cell', char)));
+    box.append(cells);
+    return box;
+  }
+  function renderTransfer(data) {
+    const transfer = transferDetails(data);
+    if (!transfer) return null;
+    const section = el('section', 'transfer-section');
+    section.setAttribute('aria-label', 'Bulletin de virement');
+    const header = append(el('div', 'transfer-header'), el('span', 'transfer-purpose', 'Aide au paiement'), el('h3', '', 'Bulletin de virement'));
+    const slip = el('div', 'transfer-slip');
+    slip.append(el('p', 'transfer-strip', 'Virement en euros'));
+    const amount = append(el('div', 'transfer-amount'),
+      append(el('div'), el('span', 'transfer-label', 'Montant · EUR'), transferBoxes(transfer.euros, 8)),
+      append(el('div'), el('span', 'transfer-label', 'CENT'), transferBoxes(transfer.cents)));
+    slip.append(append(el('div', 'transfer-top'),
+      transfer.dueDate ? append(el('div', 'transfer-due'), el('span', 'transfer-label', 'Échéance de la facture'), el('span', 'transfer-date', date(transfer.dueDate))) : el('div'), amount));
+    const fields = el('dl', 'transfer-fields');
+    const field = (label, content, className = '') => fields.append(append(el('div', 'transfer-row ' + className), el('dt', '', label), append(el('dd'), content)));
+    field('Compte bénéficiaire (IBAN)', transferBoxes(transfer.account.replace(/ /g, '')));
+    if (transfer.bank) field('BIC bénéficiaire', transferBoxes(transfer.bank));
+    field('Nom et adresse du bénéficiaire', append(el('div', 'transfer-beneficiary'), el('span', 'transfer-name', transfer.beneficiary), ...transfer.address.map(line => el('span', '', line))));
+    field(transfer.reference.structured ? 'Communication structurée' : 'Communication',
+      el('span', 'transfer-reference', transfer.reference.text || 'Non renseignée dans le XML'), 'transfer-reference-row');
+    slip.append(fields);
+    section.append(header, slip, el('p', 'transfer-help', 'Aide à la saisie dans votre banque · Données reprises du XML · Formulaire non homologué.'));
+    return section;
+  }
   function partyBlock(p, label) {
     const n = append(el('section', 'party'), el('h3', '', label), el('p', 'party-name', p.name || '—'));
     if (p.trading && p.trading !== p.name) n.append(el('p', '', p.trading));
@@ -87,7 +122,8 @@
       const grid = el('div', 'payment-grid');
       data.payments.forEach(p => {
         const block = el('div');
-        [[paymentNames[p.code] || (p.code ? `Moyen de paiement : ${p.code}` : ''), ''], [p.account, 'Compte / IBAN : '], [p.name, 'Titulaire : '], [p.bank, 'Banque / BIC : '], [p.reference, 'Communication : '], [p.mandate, 'Mandat : ']].forEach(([v, prefix]) => { if (v) block.append(el('p', '', prefix + v)); });
+        const reference = paymentReference(p.reference, p.account);
+        [[paymentNames[p.code] || (p.code ? `Moyen de paiement : ${p.code}` : ''), ''], [p.account, 'Compte / IBAN : '], [p.name, 'Titulaire : '], [p.bank, 'Banque / BIC : '], [reference.text, reference.structured ? 'Communication structurée : ' : 'Communication : '], [p.mandate, 'Mandat : ']].forEach(([v, prefix]) => { if (v) block.append(el('p', '', prefix + v)); });
         grid.append(block);
       });
       payment.append(grid);
@@ -106,6 +142,8 @@
       fragment.append(section);
     }
     if (data.notes.length) fragment.append(append(el('section', 'details-section'), el('h3', '', 'Notes'), ...data.notes.map(t => el('p', '', t))));
+    const transfer = renderTransfer(data);
+    if (transfer) fragment.append(transfer);
     return fragment;
   }
   function showXml(xml, filename) {
