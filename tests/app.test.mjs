@@ -37,6 +37,46 @@ function harness() {
   return { doc, registered, focusedElement: () => focusedElement, printCount: () => printCount, emit: (n, event, data) => (listeners.get(n)?.[event] || []).forEach(f => f(data)), serialized: () => new XMLSerializer().serializeToString(doc.getElementById('invoice')) };
 }
 const xml = fs.readFileSync(new URL('fixtures/base-example.xml', import.meta.url), 'utf8');
+const transferXml = fs.readFileSync(new URL('../exemples/07-bulletin-virement.xml', import.meta.url), 'utf8');
+
+test('Belgian payment information and the final slip show the same structured reference', () => {
+  const h = harness();
+  h.registered[0].execute({ xml: transferXml });
+  const invoice = h.doc.getElementById('invoice');
+  const slip = invoice.lastChild;
+  assert.equal(slip.getAttribute('aria-label'), 'Bulletin de virement');
+  assert.match(slip.textContent, /\+\+\+202\/6000\/10195\+\+\+/);
+  assert.match(slip.textContent, /Atelier Pixel/);
+  assert.match(slip.textContent, /Rue des Exemples/);
+  assert.match(slip.textContent, /19\/11\/2026/);
+  assert.match(invoice.textContent, /Communication structurée : \+\+\+202\/6000\/10195\+\+\+/);
+  assert.match(slip.previousSibling.textContent, /DOCUMENT FICTIF/);
+});
+
+test('a replaced document cannot retain the preceding payment slip', () => {
+  const h = harness();
+  for (const next of [transferXml.replace('>292.82</cbc:PayableAmount>', '>0</cbc:PayableAmount>'),
+    fs.readFileSync(new URL('../exemples/04-note-de-credit.xml', import.meta.url), 'utf8'),
+    transferXml.replace('202600010195', '202600010196')]) {
+    h.registered[0].execute({ xml: transferXml });
+    assert.match(h.serialized(), /Bulletin de virement/);
+    h.registered[0].execute({ xml: next });
+    assert.doesNotMatch(h.serialized(), /Bulletin de virement/);
+  }
+});
+
+test('free payment references and beneficiary names are never interpreted as markup', () => {
+  const h = harness();
+  const unsafe = transferXml.replace('PaymentMeansCode>1<', 'PaymentMeansCode>58<')
+    .replaceAll('Atelier Pixel — Société fictive', '&lt;img src=x onerror=alert(1)&gt;')
+    .replace('202600010195', '&lt;script&gt;alert(1)&lt;/script&gt;');
+  h.registered[0].execute({ xml: unsafe });
+  const invoice = h.doc.getElementById('invoice');
+  assert.equal(invoice.lastChild.getAttribute('aria-label'), 'Bulletin de virement');
+  for (const tag of ['img', 'script', 'iframe']) assert.equal(invoice.getElementsByTagName(tag).length, 0);
+  assert.match(invoice.lastChild.textContent, /<script>alert\(1\)<\/script>/);
+  assert.doesNotMatch(invoice.lastChild.textContent, /Communication structurée/);
+});
 
 test('app contract: XML tool updates visible invoice and invalid input preserves it', () => {
   const h = harness();

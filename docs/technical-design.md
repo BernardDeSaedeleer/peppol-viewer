@@ -1,6 +1,9 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.4**, mise à jour le **26 octobre 2026**.
+État documenté : version applicative **0.1.5**, mise à jour le
+**30 octobre 2026**. Les tests et contrôles navigateur/PDF sont consignés en
+section 10, dont un PDF natif fourni par l’utilisateur. La dernière distribution
+publiée est la préversion **0.1.5**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -44,7 +47,8 @@ ne contrôle ni l’ensemble des cardinalités UBL, ni les règles métier Peppo
 | --- | --- |
 | Une facture ou note de crédit à la fois | Lots, historique, recherche et archivage |
 | Lecture XML et aperçu synthétique en français | Édition, émission ou transmission de factures |
-| Fournisseur, client, lignes, TVA, totaux et paiement | Recalcul comptable ou contrôle des coordonnées bancaires |
+| Fournisseur, client, lignes, TVA, totaux et paiement | Recalcul comptable ou vérification du compte auprès d’une banque |
+| Bulletin d’aide au paiement pour les virements admissibles | Transmission d’un ordre ou formulaire bancaire homologué |
 | Impression via le navigateur | Moteur PDF autonome ou PDF/A garanti |
 | Application statique locale ou hébergée | Connexion à un point d’accès du réseau Peppol |
 | Affichage des références documentaires et signalement des fichiers/liens | Ouverture des pièces jointes, décodage de leur Base64 |
@@ -82,6 +86,7 @@ factures par ce parcours.
 | [scripts/build.mjs](../scripts/build.mjs) | Prépare `dist/index.html` et le dossier `dist/assets/` |
 | [scripts/version.mjs](../scripts/version.mjs) | Synchronise la version du pied de page depuis `package.json` |
 | [tests/parser.test.mjs](../tests/parser.test.mjs) | Tests du lecteur et du formatage |
+| [tests/payment.test.mjs](../tests/payment.test.mjs) | Tests des communications et de l’admissibilité du bulletin |
 | [tests/app.test.mjs](../tests/app.test.mjs) | Tests de l’application avec un adaptateur DOM Node |
 | [tests/fixtures/](../tests/fixtures/) | Exemples publics OpenPeppol et provenance |
 | [package.json](../package.json), [pnpm-lock.yaml](../pnpm-lock.yaml) | Commandes et dépendance de développement verrouillée |
@@ -166,6 +171,8 @@ d’effacement sécurisé de la mémoire du navigateur.
 | `decimal(raw, minimum = 0)` | Valeur textuelle, nombre minimum de décimales | Texte formaté |
 | `money(amount, fallback = '')` | `{ value, currency }`, devise de secours | Montant textuel ou `—` |
 | `date(raw)` | Date textuelle | `JJ/MM/AAAA`, texte original ou `—` |
+| `paymentReference(reference, account)` | Communication et compte textuels | `{ text, structured }` : texte à afficher et reconnaissance d’une communication structurée belge |
+| `transferDetails(data)` | Objet facture normalisé | Données du bulletin si le paiement est admissible, sinon absence de bulletin |
 | `MAX_BYTES` | Sans objet | `5 * 1024 * 1024`, soit 5 242 880 octets |
 
 Forme simplifiée du résultat, en notation de type documentaire :
@@ -282,8 +289,9 @@ code postal `PostalZone` et `CityName` sur une même ligne, `CountrySubentity`, 
 `Country/IdentificationCode`. Le code pays reste brut. Les chemins simples sont
 préfixés `cbc`, les groupes `cac`.
 
-Pour le bénéficiaire, l’interface n’affiche que son nom ou, à défaut, son identifiant
-légal dans le bloc paiement. Son adresse et ses contacts extraits ne sont pas rendus.
+Le bloc paiement standard affiche le nom du bénéficiaire ou, à défaut, son
+identifiant légal. Le bulletin complémentaire utilise la priorité décrite en
+section 6.5 pour choisir son bénéficiaire et l’adresse qui lui correspond.
 
 ### 5.3 Lignes
 
@@ -358,14 +366,21 @@ Tous les groupes `cac:PaymentMeans` sont parcourus.
 | Champ interne | Chemin relatif au groupe | Libellé |
 | --- | --- | --- |
 | `code` | `cbc:PaymentMeansCode` | Moyen de paiement connu, sinon code brut |
-| `reference` | `cbc:PaymentID` | Communication |
+| `reference` | `cbc:PaymentID` | Communication, avec présentation belge si reconnue |
 | `account` | `cac:PayeeFinancialAccount/cbc:ID` | Compte / IBAN |
+| `accountCount` | Groupes `cac:PayeeFinancialAccount` et leurs `cbc:ID` | Maximum des deux nombres, pour exclure plusieurs comptes ou plusieurs identifiants dans un seul compte |
 | `name` | `cac:PayeeFinancialAccount/cbc:Name` | Titulaire |
 | `bank` | `cac:PayeeFinancialAccount/cac:FinancialInstitutionBranch/cbc:ID` | Banque / BIC |
 | `mandate` | `cac:PaymentMandate/cbc:ID` | Mandat |
+| `hasMandate` | Présence de `cac:PaymentMandate` | Exclusion du bulletin même lorsque le mandat est vide |
+| `hasCardAccount` | Présence de `cac:CardAccount` | Exclusion du bulletin même si le code indique un virement |
 
-Les conditions de paiement viennent de `cac:PaymentTerms/cbc:Note`. Ni IBAN, ni BIC,
-ni communication ne sont validés ou transformés en ordre de paiement.
+Les conditions de paiement viennent de `cac:PaymentTerms/cbc:Note`. Les champs
+du bloc paiement restent visibles même si le bulletin complémentaire est absent.
+La reconnaissance d’une communication structurée et le contrôle local de la clé
+IBAN servent uniquement à préparer ce bulletin (sections 6.4 et 6.5). Ils ne
+vérifient ni l’existence d’un compte, ni son titulaire, ni la validité d’un BIC,
+et ne produisent aucun ordre de paiement.
 
 Les groupes racine `cac:AdditionalDocumentReference` alimentent `documents` :
 identifiant, description, type, noms des fichiers joints et nombre de liens externes.
@@ -430,6 +445,65 @@ TVA dans la devise de facture, les trois totaux clés absents, le nom manquant d
 fournisseur ou du client, les pièces jointes et liens externes non ouverts, et les lignes sans nom, quantité
 ou montant. D’autres absences peuvent se traduire par un tiret ou l’omission du
 champ sans avertissement spécifique.
+
+### 6.4 Communication structurée belge
+
+`paymentReference(reference, account)` retourne `{ text, structured }`. Une
+communication belge reconnue est présentée sous la forme
+`+++ddd/dddd/ddddd+++` ; la référence déjà présentée sous cette forme est conservée.
+La reconnaissance repose sur douze chiffres et leur clé de contrôle : les deux
+derniers chiffres doivent correspondre au reste modulo 97 des dix premiers,
+avec `97` lorsque ce reste est nul. Les zéros initiaux sont conservés.
+
+Une référence brute de douze chiffres n’est interprétée ainsi que dans le contexte
+d’un IBAN belge valide, identifié par le préfixe `BE` et sa clé de contrôle. Les
+séparateurs usuels (espaces, barres obliques, points et tirets) sont tolérés. Un numéro de facture, une
+référence étrangère ou une communication dont la clé ne correspond pas reste un
+texte libre. La reconnaissance de la communication ne remplace pas le contrôle
+de l’IBAN effectué séparément pour l’admissibilité du bulletin.
+
+Le format et le calcul de clé proviennent des
+[conditions Febelfin pour proposer des virements](https://febelfin.be/fr/themes/numerisation-et-innovation/regelgeving-voorwaarden/conditions-pour-proposer-des-virements).
+L’application conserve le texte source en mémoire ; cette présentation n’effectue
+aucune écriture dans le XML d’origine.
+
+### 6.5 Bulletin d’aide au paiement
+
+`transferDetails(data)` centralise l’admissibilité du bulletin ajouté à la fin
+de la facture. Toutes les conditions suivantes doivent être réunies :
+
+| Condition | Règle |
+| --- | --- |
+| Document | Facture `Invoice`, jamais une note de crédit |
+| Devise | Facture et montant à payer en EUR, sans conversion |
+| Montant | `LegalMonetaryTotal/PayableAmount` strictement positif, représentable exactement en euros et centimes, sans arrondi ni recalcul |
+| Moyen de paiement | Un seul groupe `PaymentMeans`, un seul compte bénéficiaire et un seul identifiant bancaire |
+| Compte | Un IBAN dont la forme et la clé modulo 97 sont valides |
+| Bénéficiaire | Un nom disponible selon la priorité ci-dessous |
+| Code | `30`, `58` ou `42` ; code `1` ou absent seulement avec un compte `BE` et une communication structurée belge valide |
+| Exclusions | Aucun prélèvement, mandat, carte ou paiement en espèces ; la présence de `PaymentMandate` ou `CardAccount` suffit à exclure le bulletin |
+
+Un montant nul, négatif, absent ou nécessitant un arrondi, une autre devise,
+plusieurs moyens de paiement, plusieurs comptes ou plusieurs identifiants dans
+un même compte empêchent l’affichage du bulletin. Un `CardAccount` présent avec
+un code de virement reste exclu. Le bloc paiement général reste disponible. Le cas du code `1` repose
+sur le contexte belge complet : ce code seul n’est pas assimilé à un virement.
+
+Le nom du bénéficiaire provient en priorité de `PayeeParty`, puis du titulaire
+du compte (`PayeeFinancialAccount/Name`), puis du fournisseur. L’adresse doit
+appartenir à la partie retenue ; l’adresse du fournisseur n’est pas reprise
+lorsque le titulaire du compte est différent. Une adresse absente n’est pas inventée.
+Le montant est celui qui reste à payer dans le XML, jamais le total TTC avant
+acompte. Le bulletin ne corrige aucune donnée financière.
+
+La présentation reprend certains repères visuels du bulletin belge : fond
+saumon, repères rouges et données en police monospace. Elle est produite avec le
+HTML/CSS local, sans image distante, police téléchargée ni dépendance ajoutée.
+Les dimensions s’adaptent au contenu et à l’espace disponible. Le bulletin est
+donc une **aide à la saisie du paiement, pas un formulaire bancaire homologué**.
+Les [directives d’impression Febelfin](https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf)
+décrivent des contraintes physiques précises pour les formulaires bancaires ;
+l’application ne revendique pas leur respect intégral.
 
 ## 7. Sécurité et confidentialité
 
@@ -521,6 +595,15 @@ n’est plus indivisible : un long commentaire TVA peut continuer sur une autre 
 Les titres restent associés au contenu suivant ; les notes longues utilisent
 `orphans` et `widows` plutôt qu’une interdiction de coupure de tout le paragraphe.
 
+Le bulletin d’aide au paiement est placé après les autres sections de la facture.
+Ses règles d’impression demandent de garder le bloc entier sur une même page et
+de le reporter sur la suivante si nécessaire. Sa largeur s’adapte à la page A4 ;
+la présentation mobile ne fixe pas les dimensions d’un formulaire bancaire.
+Les contrôles à l’écran et en largeur mobile de ce bloc ont été réalisés sur
+l’exemple 07 ; leurs résultats figurent en section 10.3. Un PDF natif fourni pour
+la v0.1.5 confirme le bulletin entier en page 3 après deux pages de facture.
+Les observations historiques ci-dessous concernent la v0.1.2.
+
 Les zones `@bottom-left` et `@bottom-right` ajoutent le nom de l’application et
 « Page x / y ». Leur prise en charge est documentée pour
 [Chrome à partir de la version 131](https://developer.chrome.com/blog/print-margins).
@@ -593,15 +676,17 @@ entrée reçoit déjà du texte et ne passe pas par `decodeXml`.
 L’enregistrement utilise un `AbortController`, annulé à l’événement `pagehide`.
 Une API absente ou un échec d’enregistrement ne bloque pas la lecture par fichier.
 Il n’y a pas de polyfill ni de mécanisme spécifique de réenregistrement au retour
-depuis le cache de navigation. Le contrat est testé dans l’adaptateur Node ; son
-fonctionnement natif n’a pas été vérifié.
+depuis le cache de navigation. Le contrat est testé dans l’adaptateur Node.
+Le 30 octobre 2026, l’ouverture de l’exemple 07 par WebMCP natif a réussi dans le
+navigateur intégré ; ce contrôle ponctuel ne valide pas tous les navigateurs ni
+les reprises depuis le cache de navigation.
 
 ## 10. Tests et niveau de vérification
 
 ### 10.1 Suite automatisée
 
-La suite actuelle contient **23 tests : 14 pour le lecteur, 7 pour l’application
-et 2 pour la synchronisation des versions**.
+Le 30 octobre 2026, les **37 tests sur 37 passent : 14 pour le lecteur XML,
+11 pour le paiement, 10 pour l’application et 2 pour la synchronisation des versions**.
 Elle s’exécute avec le lanceur natif `node:test`. Les commandes reproductibles se
 trouvent dans la section exploitation.
 
@@ -615,10 +700,14 @@ trouvent dans la section exploitation.
 | Namespaces | Préfixes renommés, URI incorrecte refusée |
 | TVA comptable distincte | Un total USD ne remplace pas la TVA EUR de facture |
 | Formatage | Grande précision décimale, valeur négative, zéro et valeur absente |
+| Communications belges | Clé modulo 97, clé `97`, zéros initiaux, séparateurs usuels, références libres ou invalides conservées |
+| Bulletin | Codes admis, contexte belge du code `1` ou absent, montant exact, priorité du bénéficiaire et de son adresse |
+| Exclusions du bulletin | Avoirs, devises, montants non admissibles, IBAN invalide, mandats même vides, cartes même avec code de virement, groupes de comptes ou identifiants bancaires multiples |
 | Entrées refusées | Vide, XML mal formé, format inconnu, profil différent, DTD, dépassement de taille |
 | Encodages | UTF-8, UTF-16 LE, ISO-8859-1 déclaré et octets invalides |
 | Données incomplètes | Total payable absent et bloc de totaux absent |
 | Application | Outil enregistré, aperçu mis à jour, entrée invalide sans remplacement |
+| Rendu du bulletin | Communication cohérente avec le bloc paiement, bulletin en fin de document, suppression lors d’un remplacement, données non interprétées comme balises |
 | Injection | Balises dans le fournisseur et le nom de fichier restant du texte |
 | Événements | Dépôt simulé, refus de plusieurs fichiers, délégation de l’impression |
 
@@ -642,17 +731,56 @@ navigateur, le document utilisé et le résultat obtenu :
 2. Lisibilité avec noms longs, descriptions multilignes, montants élevés,
    plusieurs taux et codes inconnus.
 3. Navigation clavier, annonces d’erreur au lecteur d’écran et zoom à 200 %.
-4. Affichage mobile et défilement du tableau sans perte d’information.
+4. Étendre le contrôle mobile de l’exemple 07 aux autres documents et au
+   défilement des tableaux larges sans perte d’information.
 5. Compléter le contrôle PDF natif des 48 lignes consigné en section 8 avec des
    factures courtes, une exonération, des avertissements, une note de crédit et
    des descriptions très longues, dans les navigateurs visés.
 6. Ouverture directe en `file://`, chargement HTTP local et accès Sites.
-7. WebMCP natif si le navigateur expose cette capacité.
+7. Étendre le contrôle WebMCP natif à d’autres navigateurs compatibles et aux
+   reprises depuis le cache de navigation.
 8. Charge près des limites de taille/lignes et XML fortement imbriqué.
 
 La suite ne couvre pas exhaustivement les encodages, la limite exacte de 2 000
 lignes, les courses asynchrones ou chaque branche d’erreur. Un build réussi ou les
-23 tests passants ne remplacent pas ces vérifications.
+tests passants ne remplacent pas ces vérifications.
+
+### 10.3 Contrôles réalisés pour la v0.1.5
+
+Contrôles du **30 octobre 2026**, en complément des 37 tests automatisés :
+
+| Contrôle | Résultat et portée |
+| --- | --- |
+| Écran sur ordinateur | Exemple `07-bulletin-virement.xml` ouvert et inspecté dans le navigateur intégré ; bulletin présent en fin de document |
+| Largeur mobile | Même exemple avec un viewport de 390 × 844 pixels ; `clientWidth` et `scrollWidth` mesurés à 375 pixels, sans débordement horizontal |
+| Accessibilité | L’arbre d’accessibilité expose les valeurs complètes ; les cases décoratives sont masquées par `aria-hidden`. Aucun audit complet avec lecteur d’écran n’a été effectué |
+| WebMCP natif | Ouverture de l’exemple 07 réussie dans le navigateur intégré |
+| Facture privée | Vérification locale par le parseur de la communication, du montant, du bénéficiaire et du BIC ; aucune copie partagée |
+| Distribution | Archive ZIP créée et vérifiée : six fichiers dans la structure `index.html` / `assets`, identiques au build ; empreinte SHA-256 de l’archive calculée |
+| PDF natif | PDF privé fourni par l’utilisateur, trois pages A4 portrait produites par Microsoft Print To PDF : seize lignes sur les pages 1–2, bulletin entier en page 3, aucune coupure ni superposition observée |
+
+Après une tentative d’impression automatisée sans résultat exploitable,
+l’utilisateur a fourni son PDF natif le 30 octobre 2026. Les trois pages ont été
+rendues en images et inspectées. L’en-tête du tableau est répété en page 2 ; les
+totaux, le paiement et les notes restent lisibles. Le bulletin occupe seul le haut
+de la page 3, sans coupure, avec fond saumon, repères rouges et police monospace.
+L’espace libre de la page 2 ne permettait pas d’y placer le bulletin entier.
+La numérotation « Page 1 / 3 » à « Page 3 / 3 » est correcte. Le montant, le
+bénéficiaire, l’IBAN, le BIC, l’échéance et la communication structurée du bulletin
+correspondent au XML source.
+
+Les métadonnées indiquent Microsoft Print To PDF, mais pas la version du
+navigateur ni ses réglages exacts. L’extraction du texte par `pypdf` ne produit
+pas de texte sur cet exemplaire ; le contrôle du rendu est donc visuel. Ce
+résultat valide cette facture multipage, pas tous les documents ou navigateurs.
+Les contrôles historiques de la v0.1.2 en section 8 gardent leur portée propre.
+
+Les constats ci-dessus portent sur les documents contrôlés, sans validation générale des
+navigateurs. La vérification de la facture privée porte sur la restitution des
+valeurs, pas sur une authentification du bénéficiaire ou des coordonnées bancaires.
+Ni son XML, ni un PDF ou une capture contenant ses données ne sont ajoutés au
+dépôt, à une distribution ou à une publication. Les tests partagés utilisent des
+données fictives ou des exemples publics.
 
 ## 11. Exploitation, construction et publication
 
@@ -786,6 +914,8 @@ correctifs déjà implémentés ni des évolutions automatiquement engagées.
 - [Documentation OpenPeppol BIS Billing 3.0](https://docs.peppol.eu/poacc/billing/3.0/).
 - [Syntaxe UBL Invoice](https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-invoice/).
 - [Syntaxe UBL CreditNote](https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-creditnote/).
+- [Febelfin — Conditions pour proposer des virements](https://febelfin.be/fr/themes/numerisation-et-innovation/regelgeving-voorwaarden/conditions-pour-proposer-des-virements).
+- [Febelfin — Directives pour la personnalisation et l’impression d’un formulaire pour un ordre de virement européen, version 1.3](https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf).
 - [Provenance des fixtures conservées dans le dépôt](../tests/fixtures/README.md).
 - [DOMParser — documentation MDN](https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString).
 

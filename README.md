@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.4 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.4/Peppol-Viewer-0.1.4.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.4)
+**[Télécharger Peppol Viewer 0.1.5 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Peppol-Viewer-0.1.5.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.5)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -23,10 +23,15 @@ nécessite Internet ; aucune vérification automatique n’est effectuée.
 
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.4/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
+
+La **v0.1.5, publiée le 30 octobre 2026**, ajoute un bulletin
+d’aide au paiement en fin de facture lorsque les informations permettent de
+présenter un virement sans ambiguïté, ainsi que le formatage des communications
+structurées belges valides.
 
 Auteur : [Bernard De Saedeleer](https://www.linkedin.com/in/bernard-de-saedeleer-059070aa).
 © 2026 Bernard De Saedeleer.
@@ -70,9 +75,11 @@ navigateurs compatibles. Les lignes d’un tableau large défilent horizontaleme
 
 ## Exemples de démonstration
 
-Le dossier [`exemples`](exemples/README.md) contient six documents fictifs et deux
-fichiers volontairement invalides. Le guide précise les montants attendus et les
-fonctionnalités à tester. Ces fichiers sont exclus de la publication statique.
+Le dossier [`exemples`](exemples/README.md) contient sept documents de démonstration
+et deux fichiers volontairement invalides. Les données sont fictives, sauf l’IBAN
+du spécimen public Febelfin utilisé dans l’exemple de bulletin : aucun paiement ne
+doit être effectué. Le guide précise les montants attendus et les fonctionnalités
+à tester. Ces fichiers sont exclus de la publication statique.
 
 ## Périmètre
 
@@ -94,6 +101,35 @@ Peppol. Les enveloppes de transport, CII/Factur-X et autres profils Peppol sont 
 Les données manquantes sont affichées par un tiret avec avertissement pour les totaux clés.
 Les prix affichés sont les prix nets fournis par le XML ; le détail d’une remise déjà
 intégrée au prix n’est pas développé. Le XML original reste la référence.
+
+### Bulletin d’aide au paiement — v0.1.5
+
+Le bulletin reprend le montant restant à payer, le bénéficiaire, l’IBAN et la
+communication à la fin de la facture. Il apparaît uniquement pour une facture en
+EUR avec un montant strictement positif représentable exactement en euros et
+centimes, un seul moyen de paiement, un seul IBAN dont la clé de contrôle est
+valide et un bénéficiaire identifié. Aucun arrondi ni recalcul du solde n’est effectué.
+
+Les moyens de paiement `30`, `58` et `42` sont retenus. Le code `1` ou un code
+absent n’est admis que pour un compte belge accompagné d’une communication belge
+structurée valide. Les avoirs, prélèvements, mandats, cartes, espèces, factures
+soldées, autres devises et comptes multiples n’affichent pas ce bulletin. La présence
+d’une carte exclut aussi le bulletin si le code indique un virement ; plusieurs
+identifiants bancaires dans un seul compte sont également refusés.
+Une communication de douze chiffres avec une clé modulo 97 valide est présentée
+sous la forme `+++ddd/dddd/ddddd+++` dans le contexte d’un compte belge ; les
+autres références conservent leur texte.
+
+Le fond saumon, les repères rouges et la police monospace rappellent le bulletin
+belge. Ses dimensions s’adaptent à l’écran et à l’impression : il s’agit d’une
+**aide à la saisie du paiement, pas d’un formulaire bancaire homologué**.
+L’application ne transmet aucun ordre et le contrôle de l’IBAN ne vérifie ni
+l’existence du compte ni son titulaire. Le bloc est prévu pour rester entier à
+l’impression. Le rendu à l’écran a été vérifié sur l’exemple 07, sur ordinateur
+et à la largeur mobile. Un PDF A4 fourni par l’utilisateur a également été
+contrôlé : le bulletin reste entier en page 3, après les deux pages de facture.
+Les règles détaillées et les références Febelfin figurent dans la
+[conception technique](docs/technical-design.md#65-bulletin-daide-au-paiement).
 
 ## Confidentialité
 
@@ -136,12 +172,22 @@ rappellent le XML et la lecture comptable. Cette image est chargée localement,
 sans service externe. Les mouvements restent discrets, sans animation en boucle,
 et sont désactivés si le navigateur demande de réduire les animations.
 
-Les tests couvrent les exemples officiels, devises de TVA distinctes, préfixes XML,
-précision décimale, encodages, entrées refusées, injection de balises, état conservé
-après erreur, dépôt de fichier et délégation de l’impression. Le rendu et le contrat
-WebMCP sont exercés dans un adaptateur DOM Node, pas dans un navigateur réel.
-La mise en page visuelle, la pagination PDF et le WebMCP natif restent à confirmer
-dans le navigateur avec les factures habituelles de l’utilisateur.
+Le 30 octobre 2026, les **37 tests sur 37 passent** : 14 pour le lecteur XML,
+11 pour le paiement, 10 pour l’application et 2 pour les versions. Ils couvrent
+notamment la précision décimale, les exclusions du bulletin, les entrées refusées,
+l’injection de balises, la conservation de l’aperçu après erreur et l’impression.
+
+L’exemple 07 a été contrôlé dans le navigateur intégré sur ordinateur et avec une
+fenêtre de 390 × 844 pixels, sans débordement horizontal. Son ouverture par WebMCP
+natif a réussi. L’arbre d’accessibilité expose les valeurs complètes et masque les
+cases décoratives ; aucun audit complet avec lecteur d’écran n’a été effectué.
+Une facture privée a également servi à contrôler localement le parseur, sans copie
+partagée. Son PDF natif, produit par Microsoft Print To PDF et fourni ensuite par
+l’utilisateur, a été inspecté sur ses trois pages : aucune coupure ni superposition
+observée, bulletin entier et données de paiement conformes au XML. Ce contrôle
+porte sur cet exemplaire ; les autres navigateurs et réglages restent à vérifier.
+Les preuves et limites sont détaillées dans la
+[conception technique](docs/technical-design.md#103-contrôles-réalisés-pour-la-v015).
 
 ## Versionnement et publication
 
@@ -153,8 +199,8 @@ vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.4` : préversion actuelle, avec une zone de dépôt simplifiée et les corrections TVA/PDF conservées.
-- `0.1.5` : exemple de correction suivante sans nouvelle fonctionnalité.
+- `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
+- `0.1.5` : dernière préversion publiée ; bulletin d’aide au paiement et présentation des communications structurées belges.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
@@ -162,7 +208,7 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
 `node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
-`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.4`. Conserver chaque version
+`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.5`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.
