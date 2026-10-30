@@ -1,9 +1,9 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.5 en préparation**, mise à jour le
+État documenté : version applicative **0.1.5**, mise à jour le
 **30 octobre 2026**. Les tests et contrôles navigateur/PDF sont consignés en
 section 10, dont un PDF natif fourni par l’utilisateur. La dernière distribution
-publiée est la **0.1.4**.
+publiée est la préversion **0.1.5**.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.

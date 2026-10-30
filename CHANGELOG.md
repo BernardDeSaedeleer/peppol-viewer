@@ -3,7 +3,7 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
-## 0.1.5 — 2026-10-30 — En préparation
+## 0.1.5 — 2026-10-30
 
 - Bulletin d’aide au paiement en fin de facture, avec montant restant dû,
   bénéficiaire, IBAN et communication. Présentation HTML/CSS sans dépendance :
@@ -36,8 +36,9 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
   lisibles, sans coupure ni chevauchement observés. Les données de paiement
   correspondent au XML ; navigateur et réglages exacts non connus.
 
-La version reste en préparation et les téléchargements du README pointent vers
-la v0.1.4 publiée. Aucun document de facturation privé n’est ajouté au dépôt.
+Préversion distribuée sur GitHub avec ZIP autonome, mode d’emploi, six fichiers
+applicatifs séparés et empreinte SHA-256. Aucun document de facturation privé
+n’est ajouté au dépôt ou à la distribution.
 
 ## 0.1.4 — 2026-10-26
 

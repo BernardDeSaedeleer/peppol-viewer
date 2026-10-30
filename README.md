@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.4 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.4/Peppol-Viewer-0.1.4.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.4)
+**[Télécharger Peppol Viewer 0.1.5 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Peppol-Viewer-0.1.5.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.5)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -23,15 +23,15 @@ nécessite Internet ; aucune vérification automatique n’est effectuée.
 
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.4/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
 
-La **v0.1.5 est en préparation** depuis le 30 octobre 2026 : elle ajoute un bulletin
+La **v0.1.5, publiée le 30 octobre 2026**, ajoute un bulletin
 d’aide au paiement en fin de facture lorsque les informations permettent de
-présenter un virement sans ambiguïté. Les téléchargements ci-dessus restent ceux
-de la **v0.1.4 publiée** jusqu’à la publication de cette nouvelle version.
+présenter un virement sans ambiguïté, ainsi que le formatage des communications
+structurées belges valides.
 
 Auteur : [Bernard De Saedeleer](https://www.linkedin.com/in/bernard-de-saedeleer-059070aa).
 © 2026 Bernard De Saedeleer.
@@ -102,7 +102,7 @@ Les données manquantes sont affichées par un tiret avec avertissement pour les
 Les prix affichés sont les prix nets fournis par le XML ; le détail d’une remise déjà
 intégrée au prix n’est pas développé. Le XML original reste la référence.
 
-### Bulletin d’aide au paiement — v0.1.5 en préparation
+### Bulletin d’aide au paiement — v0.1.5
 
 Le bulletin reprend le montant restant à payer, le bénéficiaire, l’IBAN et la
 communication à la fin de la facture. Il apparaît uniquement pour une facture en
@@ -199,8 +199,8 @@ vérification de mise à jour n’est nécessaire à son affichage.
 
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
-- `0.1.4` : dernière préversion publiée, avec une zone de dépôt simplifiée et les corrections TVA/PDF conservées.
-- `0.1.5` : en préparation ; bulletin d’aide au paiement et présentation des communications structurées belges.
+- `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
+- `0.1.5` : dernière préversion publiée ; bulletin d’aide au paiement et présentation des communications structurées belges.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
