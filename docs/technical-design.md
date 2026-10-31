@@ -1,10 +1,12 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.6 candidate**, mise à jour le
-**31 octobre 2026**, préparée pour revue et non publiée. Les tests et contrôles
-de cette candidate sont consignés en section 10.4. Les résultats historiques,
+État documenté : version applicative **0.1.6**, publiée comme préversion le
+**31 octobre 2026**. Les tests et contrôles
+de cette version sont consignés en section 10.4. Les résultats historiques,
 dont le PDF natif fourni pour la v0.1.5, restent limités aux versions examinées.
-La dernière distribution publiée est la préversion **0.1.5**.
+La dernière distribution publiée est la préversion **0.1.6**. La publication ne
+vaut pas validation du PDF à taille réelle, de l’impression papier ou de la
+reconnaissance bancaire ; ces contrôles restent à réaliser.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -744,7 +746,7 @@ perdre les dimensions prescrites.
 Les réglages de la boîte de dialogue restent sous le contrôle de l’utilisateur.
 Un PDF ou un exemplaire papier doit être mesuré pour confirmer la taille réelle
 sur une combinaison de navigateur et d’imprimante donnée. Les contrôles de la
-candidate figurent en section 10.4. Le PDF historique de la v0.1.5, décrit en
+v0.1.6 figurent en section 10.4. Le PDF historique de la v0.1.5, décrit en
 section 10.3, ne valide pas la géométrie du nouveau gabarit. Les observations
 historiques ci-dessous concernent la v0.1.2.
 
@@ -829,7 +831,7 @@ les reprises depuis le cache de navigation.
 
 ### 10.1 Suite automatisée
 
-La suite s’exécute avec le lanceur natif `node:test`. Les résultats de la candidate
+La suite s’exécute avec le lanceur natif `node:test`. Les résultats de la
 v0.1.6 figurent en section 10.4. Le résultat historique du 30 octobre 2026 était de
 **37 tests passants** pour la v0.1.5 : 14 pour le lecteur XML, 11 pour le paiement,
 10 pour l’application et 2 pour la synchronisation des versions. Les commandes reproductibles se
@@ -933,9 +935,10 @@ Ni son XML, ni un PDF ou une capture contenant ses données ne sont ajoutés au
 dépôt, à une distribution ou à une publication. Les tests partagés utilisent des
 données fictives ou des exemples publics.
 
-### 10.4 Vérifications de la candidate v0.1.6
+### 10.4 Vérifications de la v0.1.6
 
-La candidate part de la dernière version GitHub connue, la v0.1.5, et conserve
+La v0.1.6 a été préparée à partir de la dernière version GitHub alors publiée,
+la v0.1.5, et conserve
 les contrôles antérieurs comme historique. Les résultats ci-dessous concernent
 le nouveau gabarit ; aucune compatibilité bancaire n’est déduite du seul respect
 des dimensions CSS ou du passage des tests Node.
@@ -956,7 +959,7 @@ sur les raisons d’exclusion et le comptage commun des caractères accentués :
 | Écran sur ordinateur | Exemple `07-bulletin-virement.xml` réouvert et inspecté avec le centrage par case ; aucun paragraphe de commentaire sous le bulletin |
 | Largeur mobile | Même exemple réinspecté à 390 × 844 pixels ; `clientWidth = scrollWidth = 375` pixels, proportions conservées sans débordement horizontal ; aucun paragraphe de commentaire sous le bulletin |
 | XML privé | Contrôle local d’un document de 16 lignes : gabarit admissible, fichier et modèle comparés inchangés ; les textes littéraux `&apos;` restent tels quels ; aucune donnée de facture partagée |
-| PDF natif et taille réelle | La commande Imprimer / PDF du navigateur intégré n’a pas produit de PDF exploitable. Dimensions 210 × 101,6 mm, positions et absence de coupure restent à vérifier sur une sortie native de la candidate |
+| PDF natif et taille réelle | La commande Imprimer / PDF du navigateur intégré n’a pas produit de PDF exploitable. Dimensions 210 × 101,6 mm, positions et absence de coupure restent à vérifier sur une sortie native de la v0.1.6 |
 | Impression papier | À vérifier à 100 % avec mesure physique, couleurs et recto uniquement |
 | Reconnaissance bancaire | Non testée ; aucun paiement exécuté |
 

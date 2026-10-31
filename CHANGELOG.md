@@ -3,7 +3,7 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
-## 0.1.6 — candidate du 2026-10-31, non publiée
+## 0.1.6 — 2026-10-31 — préversion
 
 - Bulletin vectoriel adapté au modèle du guide Febelfin : format fixe de
   210 × 101,6 mm, zones et positions physiques des données, montant en huit
@@ -64,7 +64,8 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
 Le décor est reconstruit à partir du guide public, avec approximation RVB des
 couleurs. Il ne s’agit pas du fichier maître d’impression Febelfin ni d’une
-homologation bancaire. La dernière distribution publique reste la v0.1.5.
+homologation bancaire. La v0.1.6 est distribuée comme préversion ; la mesure
+physique du PDF ou du papier et la reconnaissance bancaire restent à vérifier.
 
 ## 0.1.5 — 2026-10-30
 

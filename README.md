@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.5 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Peppol-Viewer-0.1.5.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.5)
+**[Télécharger Peppol Viewer 0.1.6 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Peppol-Viewer-0.1.6.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.6)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -23,7 +23,7 @@ nécessite Internet ; aucune vérification automatique n’est effectuée.
 
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -33,10 +33,12 @@ d’aide au paiement en fin de facture lorsque les informations permettent de
 présenter un virement sans ambiguïté, ainsi que le formatage des communications
 structurées belges valides.
 
-La **v0.1.6 est préparée pour revue, sans publication à ce stade**. Elle remplace
+La **v0.1.6, publiée le 31 octobre 2026**, remplace
 ce bulletin adaptatif par un gabarit inspiré des directives Febelfin, avec des
-dimensions d’impression fixes de **210 × 101,6 mm**. Les liens de téléchargement
-ci-dessus désignent toujours la dernière distribution publique, la v0.1.5.
+dimensions d’impression fixes de **210 × 101,6 mm**. Cette préversion ajoute les
+raisons d’exclusion du bulletin et un comptage commun des caractères accentués
+pour leur placement dans les cases, sans modifier les données XML. La mesure
+physique du PDF ou du papier et la reconnaissance bancaire restent à vérifier.
 
 Auteur : [Bernard De Saedeleer](https://www.linkedin.com/in/bernard-de-saedeleer-059070aa).
 © 2026 Bernard De Saedeleer.
@@ -90,6 +92,8 @@ doit être effectué. Le guide précise les montants attendus et les fonctionnal
 décomposés, les limites de 26/27 caractères, une communication trop longue et un
 IBAN invalide. Ces fichiers sont exclus de la publication statique.
 
+[Télécharger les exemples fictifs et leur guide](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Exemples-Peppol-Viewer-0.1.6.zip).
+
 ## Périmètre
 
 - Factures `Invoice` et notes de crédit `CreditNote` déclarant exactement
@@ -111,7 +115,7 @@ Les données manquantes sont affichées par un tiret avec avertissement pour les
 Les prix affichés sont les prix nets fournis par le XML ; le détail d’une remise déjà
 intégrée au prix n’est pas développé. Le XML original reste la référence.
 
-### Bulletin d’aide au paiement — candidate v0.1.6
+### Bulletin d’aide au paiement — v0.1.6
 
 Le bulletin reprend le montant restant à payer, le bénéficiaire, l’IBAN et la
 communication à la fin de la facture. Il apparaît uniquement pour une facture en
@@ -216,9 +220,9 @@ et sont désactivés si le navigateur demande de réduire les animations.
 La suite couvre la précision décimale, les exclusions du bulletin, les entrées
 refusées, l’injection de balises, la conservation de l’aperçu après erreur et la
 délégation de l’impression. Pour la v0.1.6, elle vérifie aussi les limites du
-gabarit et l’absence de mutation des données. Les résultats de cette candidate
+gabarit et l’absence de mutation des données. Les résultats de cette version
 et les contrôles visuels sont consignés dans la
-[section de vérification v0.1.6](docs/technical-design.md#104-vérifications-de-la-candidate-v016).
+[section de vérification v0.1.6](docs/technical-design.md#104-vérifications-de-la-v016).
 
 Le 31 octobre 2026, la suite complète compte **57 tests sur 57 passants** :
 14 lecteur XML, 21 paiement, 20 application et 2 construction/version. Les tests
@@ -258,8 +262,8 @@ vérification de mise à jour n’est nécessaire à son affichage.
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
 - `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
-- `0.1.5` : dernière préversion publiée ; bulletin d’aide au paiement et présentation des communications structurées belges.
-- `0.1.6` : candidate en revue ; gabarit Febelfin à taille réelle, sans modification des données XML.
+- `0.1.5` : préversion du 30 octobre 2026 ; bulletin d’aide au paiement et présentation des communications structurées belges.
+- `0.1.6` : dernière préversion publiée, le 31 octobre 2026 ; gabarit Febelfin à dimensions fixes, exclusions explicites et accents combinants, sans modification des données XML.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
