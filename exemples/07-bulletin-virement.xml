@@ -20,14 +20,14 @@
   <cac:AccountingSupplierParty>
     <cac:Party>
       <cbc:EndpointID schemeID="0208">0000000000</cbc:EndpointID>
-      <cac:PartyName><cbc:Name>Atelier Pixel — Société fictive</cbc:Name></cac:PartyName>
+      <cac:PartyName><cbc:Name>Atelier Pixel Démo</cbc:Name></cac:PartyName>
       <cac:PostalAddress>
         <cbc:StreetName>Rue des Exemples 12</cbc:StreetName>
         <cbc:CityName>Ville-Démo</cbc:CityName><cbc:PostalZone>0000</cbc:PostalZone>
         <cac:Country><cbc:IdentificationCode>BE</cbc:IdentificationCode></cac:Country>
       </cac:PostalAddress>
       <cac:PartyTaxScheme><cbc:CompanyID>BE0000000000</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>
-      <cac:PartyLegalEntity><cbc:RegistrationName>Atelier Pixel — Société fictive</cbc:RegistrationName><cbc:CompanyID>DEMO-FOURNISSEUR</cbc:CompanyID></cac:PartyLegalEntity>
+      <cac:PartyLegalEntity><cbc:RegistrationName>Atelier Pixel Démo</cbc:RegistrationName><cbc:CompanyID>DEMO-FOURNISSEUR</cbc:CompanyID></cac:PartyLegalEntity>
       <cac:Contact><cbc:Name>Contact fictif</cbc:Name><cbc:ElectronicMail>supplier@example.invalid</cbc:ElectronicMail></cac:Contact>
     </cac:Party>
   </cac:AccountingSupplierParty>
@@ -46,7 +46,7 @@
       <cac:Contact><cbc:Name>Contact fictif</cbc:Name><cbc:ElectronicMail>customer@example.invalid</cbc:ElectronicMail></cac:Contact>
     </cac:Party>
   </cac:AccountingCustomerParty>
-  <cac:PaymentMeans><cbc:PaymentMeansCode>1</cbc:PaymentMeansCode><cbc:PaymentID>202600010195</cbc:PaymentID><cac:PayeeFinancialAccount><cbc:ID>BE68539007547034</cbc:ID><cbc:Name>Atelier Pixel — Société fictive</cbc:Name></cac:PayeeFinancialAccount></cac:PaymentMeans>
+  <cac:PaymentMeans><cbc:PaymentMeansCode>1</cbc:PaymentMeansCode><cbc:PaymentID>202600010195</cbc:PaymentID><cac:PayeeFinancialAccount><cbc:ID>BE68539007547034</cbc:ID><cbc:Name>Atelier Pixel Démo</cbc:Name></cac:PayeeFinancialAccount></cac:PaymentMeans>
   <cac:PaymentTerms><cbc:Note>IBAN issu du spécimen public Febelfin. Aucun paiement attendu. Ce document sert exclusivement aux essais.</cbc:Note></cac:PaymentTerms>
   
   

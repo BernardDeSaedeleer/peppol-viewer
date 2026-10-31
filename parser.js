@@ -24,6 +24,12 @@
       name: value(p, 'cac:PartyLegalEntity/cbc:RegistrationName') || value(p, 'cac:PartyName/cbc:Name'),
       trading: value(p, 'cac:PartyName/cbc:Name'),
       address: [value(address, 'cbc:StreetName'), value(address, 'cbc:AdditionalStreetName'), ...values(address, 'cac:AddressLine/cbc:Line'), [value(address, 'cbc:PostalZone'), value(address, 'cbc:CityName')].filter(Boolean).join(' '), value(address, 'cbc:CountrySubentity'), value(address, 'cac:Country/cbc:IdentificationCode')].filter(Boolean),
+      postal: {
+        street: value(address, 'cbc:StreetName'), additionalStreet: value(address, 'cbc:AdditionalStreetName'),
+        addressLines: values(address, 'cac:AddressLine/cbc:Line'), postalCode: value(address, 'cbc:PostalZone'),
+        city: value(address, 'cbc:CityName'), region: value(address, 'cbc:CountrySubentity'),
+        country: value(address, 'cac:Country/cbc:IdentificationCode'),
+      },
       vat: nodes(p, 'cac:PartyTaxScheme').filter(t => value(t, 'cac:TaxScheme/cbc:ID') === 'VAT').map(t => value(t, 'cbc:CompanyID')).filter(Boolean).join(', '),
       registration: value(p, 'cac:PartyLegalEntity/cbc:CompanyID'),
       endpoint: value(p, 'cbc:EndpointID'),
@@ -193,6 +199,42 @@
       bank: payment.bank || '', reference, euros, cents, dueDate: data.dueDate || '',
     };
   }
+  function febelfinDetails(data) {
+    const transfer = transferDetails(data);
+    if (!transfer) return null;
+    const unavailable = reason => ({ transfer, reason });
+    // These limits belong to the fixed form, not to the invoice parser. Never
+    // truncate, repair an entity or borrow another party's address to make it fit.
+    // Febelfin, European credit transfer form v1.3, pp. 4–6.
+    if (transfer.euros.length > 8) return unavailable('Le montant dépasse les huit cases en euros du gabarit.');
+    const party = data.payee?.name ? data.payee : transfer.beneficiary === data.supplier?.name ? data.supplier : null;
+    const postal = party?.postal;
+    if (!postal && transfer.address.length) return unavailable('L’adresse du bénéficiaire ne peut pas être placée dans les zones du gabarit sans être interprétée.');
+    if (postal?.region) return unavailable('L’adresse du bénéficiaire contient une région sans zone prévue dans le gabarit.');
+    const fields = {
+      beneficiary: transfer.beneficiary.toUpperCase(),
+      street: [postal?.street, postal?.additionalStreet, ...(postal?.addressLines || [])].filter(Boolean).join(' ').toUpperCase(),
+      locality: [postal?.country, postal?.postalCode, postal?.city].filter(Boolean).join(' ').toUpperCase(),
+      account: transfer.account, bank: transfer.bank.toUpperCase(),
+      reference: transfer.reference.text.toUpperCase(), euros: transfer.euros, cents: transfer.cents,
+      code: transfer.reference.structured ? '03' : '02',
+    };
+    // Accents stay intact. Do not transliterate, collapse whitespace or decode
+    // text such as a literal &apos; left after normal XML parsing.
+    const latinText = /^(?:\p{Script=Latin}\p{M}*|[0-9 .,'’&()+/:;–—-])*$/u;
+    for (const [key, label] of [['beneficiary', 'Le nom du bénéficiaire'], ['street', 'La rue du bénéficiaire'], ['locality', 'La localité du bénéficiaire']]) {
+      if ([...fields[key]].length > 26) return unavailable(`${label} dépasse les 26 caractères du gabarit.`);
+      if (!latinText.test(fields[key]) || /&(?:#\d+|#X[\dA-F]+|[A-Z][A-Z\d]+);/.test(fields[key])) {
+        return unavailable(`${label} contient des caractères qui ne peuvent pas être repris dans le gabarit.`);
+      }
+    }
+    if (fields.bank && !/^[A-Z]{6}[A-Z\d]{2}(?:[A-Z\d]{3})?$/.test(fields.bank)) return unavailable('Le BIC ne peut pas être repris dans les huit ou onze cases prévues.');
+    if (!transfer.reference.structured) {
+      if (fields.reference.length > 34) return unavailable('La communication dépasse les 34 caractères du gabarit.');
+      if (!/^[A-Z\d +/=-]*$/.test(fields.reference)) return unavailable('La communication contient des caractères non prévus dans le gabarit.');
+    }
+    return { transfer, fields, reason: '' };
+  }
   function decodeXml(buffer) {
     const bytes = new Uint8Array(buffer);
     if (bytes.byteLength > MAX_BYTES) throw new Error('Le fichier dépasse la limite de 5 Mo.');
@@ -207,5 +249,5 @@
     try { return new TextDecoder(encoding, { fatal: true }).decode(bytes); }
     catch { throw new Error('L’encodage du XML est inconnu ou invalide. Essayez un export UTF-8.'); }
   }
-  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, paymentReference, transferDetails, decodeXml, MAX_BYTES });
+  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, paymentReference, transferDetails, febelfinDetails, decodeXml, MAX_BYTES });
 })();

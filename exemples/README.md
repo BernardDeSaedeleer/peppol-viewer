@@ -13,7 +13,7 @@ Ils servent à tester le lecteur. Ils ne constituent pas des factures à émettr
 1. Ouvrir le site, ou le fichier index.html à la racine du projet.
 2. Glisser **un seul XML** dans la zone de dépôt, ou cliquer dans la zone de dépôt.
 3. Vérifier le contenu et le montant attendu ci-dessous.
-4. Tester **Fermer** : l’accueil et la zone de dépôt réapparaissent. Déposer une autre facture, puis tester **Imprimer / PDF**. Choisir A4 et désactiver les en-têtes/pieds de page du navigateur si nécessaire.
+4. Tester **Fermer** : l’accueil et la zone de dépôt réapparaissent. Déposer une autre facture, puis tester **Imprimer / PDF**. Choisir A4 portrait, **100 % / Taille réelle**, marges par défaut et désactiver les en-têtes/pieds de page du navigateur. Pour le bulletin de la v0.1.6, choisir la couleur et le recto uniquement ; éviter « Ajuster à la page ».
 
 | Fichier | Ce qu’il permet de vérifier | Résultat attendu |
 |---|---|---|
@@ -23,9 +23,26 @@ Ils servent à tester le lecteur. Ils ne constituent pas des factures à émettr
 | 04-note-de-credit.xml | Note de crédit et référence à la facture d’origine | **121,00 EUR à créditer**, sans inversion automatique du signe |
 | 05-facture-longue-48-lignes.xml | Défilement, textes longs, tableau et impression sur plusieurs pages | 48 lignes ; HT 1 788,00 EUR ; à payer **2 163,48 EUR** |
 | 06-devise-usd-utf16.xml | UTF-16, accents, USD, exonération fictive, prix à 8 décimales par 100 unités et texte contenant des balises | **71,40 USD** ; prix 3,14159265 USD ; balises affichées comme texte ; référence ANNEXE-DEMO visible, sans avertissement de pièce jointe |
-| 07-bulletin-virement.xml | Bulletin et communication belge avec moyen de paiement non précisé (code 1) | **292,82 EUR** ; **+++202/6000/10195+++** ; bulletin à la fin du document |
+| 07-bulletin-virement.xml | Gabarit Febelfin et communication belge avec moyen de paiement non précisé (code 1) | **292,82 EUR** ; **+++202/6000/10195+++** ; **ATELIER PIXEL DÉMO** ; bulletin 210 × 101,6 mm sur une page d’impression séparée en v0.1.6 |
 
 Le septième exemple utilise l’IBAN du spécimen public Febelfin (`BE68 5390 0754 7034`) pour exercer le contrôle de clé. Sa validité syntaxique ne signifie pas qu’un paiement est autorisé. **Ne pas payer**. La communication et les autres données restent fictives.
+
+Pour la candidate v0.1.6, le nom fictif « Atelier Pixel Démo » reste dans la limite
+de 26 caractères du gabarit. La communication structurée doit occuper seule sa
+zone ; les zones du donneur d’ordre, de signature et de date d’exécution doivent
+rester vides. L’échéance du 19 novembre 2026 demeure une information de facture,
+hors du formulaire. Mesurer le bulletin imprimé à 100 % : 210 mm de largeur et
+101,6 mm de hauteur. L’aperçu mobile conserve les proportions, sans servir de
+preuve des dimensions sur papier. La reconnaissance bancaire reste à vérifier.
+
+Contrôle du 31 octobre 2026 sur la candidate v0.1.6 : l’exemple 07 a été inspecté
+sur ordinateur et à 390 × 844 pixels. La largeur du document reste de 375 pixels
+sans débordement horizontal, et le SVG mesure environ 307 × 148,52 pixels en
+conservant ses proportions. La tentative d’impression dans le navigateur
+intégré n’a pas fourni de PDF exploitable ; la mesure à 100 % sur PDF ou papier
+reste à réaliser. Le décor situé à environ 2,17 mm du bord peut être rogné par
+une imprimante non bord à bord : ne pas réduire le formulaire avec « Ajuster
+à la page » pour compenser.
 
 ## Vérifier les erreurs
 

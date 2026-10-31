@@ -3,6 +3,42 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.6 — candidate du 2026-10-31, non publiée
+
+- Bulletin vectoriel adapté au modèle du guide Febelfin : format fixe de
+  210 × 101,6 mm, zones et positions physiques des données, montant en huit
+  cases euros et deux cases centimes, code `02` ou `03` selon la communication.
+- Impression sur une page A4 séparée, à 100 % / taille réelle, en couleur et
+  recto uniquement. L’aperçu écran réduit le formulaire dans son ensemble sans
+  redistribuer les champs. Les marges internes conservent les 186 mm utiles de
+  la facture, tandis que le bulletin utilise les 210 mm de largeur de l’A4.
+- Données du bulletin en majuscules, accents conservés, police monospace noire.
+  L’échéance de facture reste hors du formulaire ; aucune date d’exécution,
+  signature ou coordonnée du donneur d’ordre n’est déduite du XML.
+- Contraintes du gabarit vérifiées séparément de l’admissibilité du virement :
+  noms et lignes d’adresse de 26 caractères au maximum, communication libre de
+  34 caractères avec alphabet autorisé, BIC de 8 ou 11 caractères, capacité du
+  montant. Une valeur incompatible entraîne un message explicite sans bulletin,
+  sans troncature, abréviation, réduction de police ou correction de la source.
+- Conservation du XML et des valeurs extraites, y compris les textes mal
+  échappés. Les contrôles supplémentaires ne constituent pas une validation Peppol.
+- Exemple 07 adapté avec un nom fictif assez court pour exercer le gabarit.
+- **49 tests sur 49 passent** : 14 lecteur XML, 18 paiement, 15 application et
+  2 construction/version. Build et contrôle du diff réussis le 31 octobre 2026.
+- Exemple 07 inspecté sur ordinateur et à 390 × 844 pixels, sans débordement
+  horizontal. Contrôle local d’une facture privée : gabarit admissible, fichier
+  et modèle inchangés, entités littérales conservées, aucune donnée privée publiée.
+- L’impression depuis le navigateur intégré n’a pas produit de PDF exploitable.
+  La taille réelle en PDF/papier et la reconnaissance bancaire restent à vérifier.
+  Le décor commence à environ 2,17 mm du bord : une imprimante non bord à bord
+  peut le rogner ; ajuster à la page réduirait les dimensions du gabarit.
+- Vérifications détaillées en section 10.4 de la conception technique. Les
+  contrôles PDF natif de la v0.1.5 restent limités à cette version.
+
+Le décor est reconstruit à partir du guide public, avec approximation RVB des
+couleurs. Il ne s’agit pas du fichier maître d’impression Febelfin ni d’une
+homologation bancaire. La dernière distribution publique reste la v0.1.5.
+
 ## 0.1.5 — 2026-10-30
 
 - Bulletin d’aide au paiement en fin de facture, avec montant restant dû,
