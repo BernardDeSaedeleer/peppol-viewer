@@ -519,7 +519,7 @@ pourquoi le bulletin ne peut pas être produit sans perte d’information.
 | `beneficiary` | Nom en majuscules, 26 caractères au maximum, accents conservés |
 | `street` | Rue, complément et lignes d’adresse joints par une espace, 26 caractères au maximum |
 | `locality` | Pays, code postal et ville joints par une espace, 26 caractères au maximum |
-| `account` | IBAN contrôlé, groupes de quatre caractères séparés par une espace |
+| `account` | IBAN contrôlé ; caractères placés dans les cases sans espaces de séparation |
 | `bank` | BIC absent ou conforme à la forme de 8 ou 11 caractères, en majuscules ; aucun BIC n’est inventé |
 | `reference` | Communication structurée valide au format `+++ddd/dddd/ddddd+++`, ou communication libre en majuscules de 34 caractères au maximum |
 | `euros`, `cents` | Huit chiffres euros au maximum, alignés à droite, et exactement deux centimes ; valeur maximale représentable `99999999.99` |
@@ -551,34 +551,39 @@ les erreurs éventuelles de l’émetteur au lieu de les corriger silencieusemen
 
 Le bulletin est un SVG local inséré dans le DOM, avec un repère de
 **210 × 101,6 unités**, correspondant à **210 × 101,6 mm à l’impression**.
-Son décor est reconstruit à partir du modèle du guide public Febelfin, et les
-positions de personnalisation suivent les cotes des pages 4 à 6 du guide :
+Son décor est reconstruit à partir du modèle du guide public Febelfin. Le choix
+de suivre les cases est autorisé au § 2.1, page 4 du guide ; ce choix renvoie
+aux règles de remplissage manuel du § 3, page 7. Chaque caractère occupe donc
+une case, y compris dans l’IBAN et la communication.
 
-| Donnée | Position depuis le bord gauche | Pied des caractères depuis le bord supérieur |
-| --- | --- | --- |
-| Montant | Entiers alignés à droite, limite de tabulation 190,5 mm ; centimes dans leurs deux cases | 29,6333 mm |
-| IBAN bénéficiaire | 35,56 mm | 63,5 mm |
-| BIC bénéficiaire | 35,56 mm | 71,9667 mm |
-| Nom bénéficiaire | 35,56 mm | 80 mm |
-| Rue bénéficiaire | 35,56 mm | 84 mm |
-| Localité bénéficiaire | 35,56 mm | 88 mm |
-| Communication | 68,58 mm | 97,3667 mm |
-| Code `02` / `03` | 198,12 mm | 12,7 mm |
-| Repère d’alignement `T` | 205,8 mm | 45,2 mm, soit 56,4 mm du bord inférieur |
+Le décor et les données utilisent une même grille géométrique. Pour chaque
+case, le texte est placé à son centre horizontal et vertical avec
+`text-anchor="middle"` et `dominant-baseline="central"`. Un caractère accentué
+et ses éventuels signes combinants forment un seul graphème, conservé dans une
+même case. Les espaces des champs textuels réservent leur position sans encre.
+
+| Zone | Répartition dans la grille |
+| --- | --- |
+| Montant EUR | Huit cases ; chiffres alignés à droite, cases initiales inutilisées vides |
+| Montant CENT | Deux cases toujours remplies, y compris `00` |
+| IBAN bénéficiaire | 34 cases ; caractères depuis la première, sans espaces entre les groupes ; le décor conserve les repères de groupement |
+| BIC bénéficiaire | Onze cases ; huit ou onze caractères depuis la première, ou zone vide si le BIC est absent |
+| Nom, rue et localité bénéficiaire | 26 cases par ligne ; un graphème par case, espaces inclus comme cases vides |
+| Communication | 34 cases ; texte depuis la première case, avec chaque `+`, `/` ou espace à sa place |
+| Code `02` / `03` | Deux cases ; un chiffre centré dans chacune |
 
 Les données sont noires, en police système monospace `Courier New` avec des
 replis locaux, en majuscules et sans italique, à 4,6 mm de corps (environ
-13,04 points). Le code `02` / `03` utilise un corps fixe de 4,4 mm et un
-espacement de −0,1 mm entre caractères, soit un pas de 2,54 mm avec `Courier New`
-(dix caractères par pouce), pour ses deux cases plus étroites. Ce réglage fixe
-ne dépend pas de la longueur des données. Le guide demande au maximum dix
-caractères par pouce et une hauteur de lettre comprise entre 2,5 et 3,2 mm ; le
-rendu effectivement imprimé dépend aussi des polices disponibles. L’impression
-continue est utilisée pour les données textuelles, avec les espaces de séparation
-de l’IBAN. Les chiffres du montant suivent les cases euros et centimes.
+13,04 points). Le code `02` / `03` utilise un corps fixe de 4,4 mm pour ses
+cases plus étroites. Ces tailles sont fixes : elles ne sont pas ajustées à la
+longueur du texte. La position vient de chaque case et le rendu des glyphes
+dépend aussi des polices disponibles. Le XML et le modèle ne sont pas modifiés
+par cette répartition visuelle.
 
 Le repère `T` est un tracé vectoriel OCR-B à 10 points, intégré directement dans
-le SVG pour éviter une dépendance aux polices installées. Le contour provient
+le SVG pour éviter une dépendance aux polices installées. Il conserve son
+positionnement à 205,8 mm du bord gauche, avec son pied à 45,2 mm du bord
+supérieur, soit 56,4 mm du bord inférieur. Le contour provient
 de `ocrb10.sfd` du paquet [OCR-B Outline sur CTAN](https://ctan.org/tex-archive/fonts/ocr-b-outline),
 de Z. Wagner d’après les fontes METAFONT de Norbert Schwarz. Le README de ce
 paquet autorise l’utilisation, la modification et la distribution sans
@@ -703,8 +708,10 @@ Le bulletin d’aide au paiement est placé après les autres sections de la fac
 La v0.1.6 impose un saut de page avant ce bloc et demande de le garder entier.
 Le SVG imprimé mesure 210 × 101,6 mm, sans repli mobile des champs ni réduction
 automatique par les styles. À l’écran, il est réduit proportionnellement à
-l’espace disponible. Les instructions hors formulaire indiquent l’impression
-à **100 % / Taille réelle**, en A4 portrait, couleur et recto uniquement. Le
+l’espace disponible. Les deux paragraphes de consignes et de référence sous le
+bulletin sont absents du DOM, à l’écran comme à l’impression. Les instructions
+restent dans la documentation et le mode d’emploi : imprimer à **100 % / Taille
+réelle**, en A4 portrait, couleur et recto uniquement. Le
 réglage « Ajuster à la page » modifierait les dimensions attendues ; les marges
 matérielles d’une imprimante peuvent également rogner les bords. Le décor
 commence à environ 2,17 mm du bord latéral ; une imprimante non bord à bord
@@ -910,15 +917,19 @@ les contrôles antérieurs comme historique. Les résultats ci-dessous concernen
 le nouveau gabarit ; aucune compatibilité bancaire n’est déduite du seul respect
 des dimensions CSS ou du passage des tests Node.
 
-Contrôles du **31 octobre 2026** :
+Contrôles du **31 octobre 2026**, après le centrage de tous les champs dans leurs
+cases et la suppression des deux paragraphes sous le bulletin. Les 51 tests
+ci-dessous remplacent le résultat initial de 49 tests pour cette candidate :
 
 | Contrôle | Résultat et portée |
 | --- | --- |
-| Tests automatisés | **49 tests sur 49 passent** : 14 lecteur XML, 18 paiement, 15 application et 2 construction/version |
-| Construction | Build réussi ; contrôle `git diff --check` sans erreur |
+| Tests automatisés | **51 tests sur 51 passent** : 14 lecteur XML, 18 paiement, 17 application et 2 construction/version |
+| Construction | Build réussi après la correction du centrage ; contrôle `git diff --check` sans erreur |
 | Conservation des valeurs | Tests ajoutés sur un modèle gelé, les accents, les entités littérales, les limites de champs et l’association du bénéficiaire à sa propre adresse |
-| Écran sur ordinateur | Exemple `07-bulletin-virement.xml` ouvert et inspecté, avec le nouveau gabarit |
-| Largeur mobile | Même exemple à 390 × 844 pixels ; `clientWidth = scrollWidth = 375` pixels ; SVG de 307 × 148,515625 pixels, proportions conservées sans débordement horizontal |
+| Centrage par case | Position de chaque graphème comparée au centre du rectangle correspondant ; débuts des rangées, alignement du montant à droite, nom de 26 caractères, communication de 34 caractères, code `02` et IBAN étranger de 22 caractères vérifiés |
+| Accents décomposés | Une lettre et son accent combinant en NFD restent dans la même case, sans modification de la source |
+| Écran sur ordinateur | Exemple `07-bulletin-virement.xml` réouvert et inspecté avec le centrage par case ; aucun paragraphe de commentaire sous le bulletin |
+| Largeur mobile | Même exemple réinspecté à 390 × 844 pixels ; `clientWidth = scrollWidth = 375` pixels, proportions conservées sans débordement horizontal ; aucun paragraphe de commentaire sous le bulletin |
 | XML privé | Contrôle local d’un document de 16 lignes : gabarit admissible, fichier et modèle comparés inchangés ; les textes littéraux `&apos;` restent tels quels ; aucune donnée de facture partagée |
 | PDF natif et taille réelle | La commande Imprimer / PDF du navigateur intégré n’a pas produit de PDF exploitable. Dimensions 210 × 101,6 mm, positions et absence de coupure restent à vérifier sur une sortie native de la candidate |
 | Impression papier | À vérifier à 100 % avec mesure physique, couleurs et recto uniquement |

@@ -22,12 +22,28 @@
     return node;
   }
   function transferForm(fields) {
-    // All coordinates are millimetres. Data baselines: Febelfin v1.3, pp. 4–6.
+    // All coordinates are millimetres. Box filling: Febelfin v1.3, pp. 4 and 7.
     // The decoration reconstructs the public specimen; it is not the print master.
     const svg = svgNode('svg', { class: 'transfer-slip', viewBox: '0 0 210 101.6', width: '210mm', height: '101.6mm', role: 'img', 'aria-labelledby': 'transfer-title transfer-description' });
     svg.append(svgNode('title', { id: 'transfer-title' }, 'Bulletin de virement'),
       svgNode('desc', { id: 'transfer-description' }, `${fields.euros},${fields.cents} EUR — ${fields.beneficiary} — ${fields.street} — ${fields.locality} — IBAN ${fields.account}${fields.bank ? ' — BIC ' + fields.bank : ''} — Communication ${fields.reference || 'non renseignée'}`));
     const red = '#ff3617', tint = '#ffd7d1', light = '#ffebe8';
+    // Decoration and text share the same grid, including vertical centring.
+    const row = (x, y, count, height = 5.63, options = {}) => ({ x, y, count, height, width: 4.04, pitch: 5.08, white: count, separators: [], ...options });
+    const groups = [4, 8, 12, 16, 20, 24, 28, 32];
+    const grids = {
+      executionDate: row(4.04, 24.10, 6, 5.63, { separators: [2, 4] }),
+      euros: row(151.36, 24.10, 8, 5.63, { separators: [2, 5] }),
+      cents: row(197.00, 24.10, 2),
+      payerAccount: row(34.52, 32.47, 34, 5.92, { white: 16, separators: groups }),
+      account: row(34.52, 58.02, 34, 5.63, { white: 16, separators: groups }),
+      bank: row(34.52, 66.39, 11, 5.77, { white: 8 }),
+      reference: row(34.52, 91.79, 34),
+      beneficiary: row(34.52, 75.62, 26, 4.04, { outline: false }),
+      street: row(34.52, 79.95, 26, 4.04, { outline: false }),
+      locality: row(34.52, 84.14, 26, 4.04, { outline: false }),
+      code: row(197.72, 7.22, 2, 5.77, { width: 2.54, pitch: 2.54 }),
+    };
     const artwork = svgNode('g', { 'aria-hidden': 'true' });
     const rect = (x, y, width, height, fill = '#fff') => artwork.append(svgNode('rect', { x, y, width, height, fill }));
     const path = d => artwork.append(svgNode('path', { d, fill: 'none', stroke: red, 'stroke-width': .14 }));
@@ -39,26 +55,16 @@
     label(92.87, 3.32, 'Signature(s)');
     label(206.2, 5.05, 'ORDRE DE VIREMENT', 3.46, { 'font-weight': 'bold', 'text-anchor': 'end' });
     label(4.04, 19.05, 'Si complété à la main, n’indiquer qu’une seule MAJUSCULE ou un seul chiffre noir (ou bleu) par case', 2.88, { fill: '#fff', 'font-weight': 'bold', 'font-style': 'italic' });
-    const boxes = (x, y, count, height = 5.63, white = count, separators = []) => {
+    const boxes = ({ x, y, count, height, width, pitch, white, separators, outline = true }) => {
       for (let i = 0; i < count; i++) {
-        const left = x + i * 5.08, right = left + 4.04, bottom = y + height;
-        rect(left, y, 4.04, height, i < white ? '#fff' : light);
-        path(`M${left} ${y + height / 3}V${y}H${right}V${y + height / 3}M${left} ${bottom - height / 3}V${bottom}H${right}V${bottom - height / 3}`);
-        if (separators.includes(i + 1)) rect(right, bottom - 1.2, 1.04, 1.2, red);
+        const left = x + i * pitch, right = left + width, bottom = y + height;
+        rect(left, y, width, height, i < white ? '#fff' : light);
+        if (outline) path(`M${left} ${y + height / 3}V${y}H${right}V${y + height / 3}M${left} ${bottom - height / 3}V${bottom}H${right}V${bottom - height / 3}`);
+        if (separators.includes(i + 1)) rect(right, bottom - 1.2, pitch - width, 1.2, red);
       }
     };
-    const groups = [4, 8, 12, 16, 20, 24, 28, 32];
-    boxes(4.04, 24.10, 6, 5.63, 6, [2, 4]);
-    boxes(151.36, 24.10, 8, 5.63, 8, [2, 5]);
-    boxes(197.00, 24.10, 2);
-    boxes(34.52, 32.47, 34, 5.92, 16, groups);
-    boxes(34.52, 58.02, 34, 5.63, 16, groups);
-    boxes(34.52, 66.39, 11, 5.77, 8);
-    boxes(34.52, 91.79, 34);
-    for (const y of [41.71, 46.04, 50.37, 75.62, 79.95, 84.14]) {
-      for (let i = 0; i < 26; i++) rect(34.52 + i * 5.08, y, 4.04, 4.04);
-    }
-    path('M197.72 9.2V7.22H202.8V9.2M197.72 11V12.99H202.8V11M200.26 7.22V9.2M200.26 11V12.99');
+    Object.values(grids).forEach(boxes);
+    for (const y of [41.71, 46.04, 50.37]) boxes(row(34.52, y, 26, 4.04, { outline: false }));
     label(4.04, 23.09, 'Date d’exécution souhaitée dans le futur');
     label(151.36, 23.09, 'Montant');
     label(185.01, 23.52, 'EUR', 2.88, { 'font-weight': 'bold' });
@@ -74,18 +80,24 @@
     // Source and license: docs/technical-design.md, section 6.5.
     artwork.append(svgNode('path', { fill: '#000', transform: 'translate(205.8 45.2) scale(0.003527777778 -0.003527777778)', d: 'M151 698C159 699 560 700 570 698C583 696 595 687 602 676C621 646 604 606 570 600C566 599 537 599 487 599L411 599L411 317C411 9 411 30 405 17C402 10 391 -1 384 -4C369 -12 353 -12 338 -4C331 -1 320 10 317 17C311 30 311 9 311 317L311 599L235 599C152 599 151 599 140 604C113 618 104 652 121 677C128 687 139 695 151 698Z' }));
     const ink = svgNode('g', { 'aria-hidden': 'true', fill: '#000', 'font-family': '"Courier New", Courier, monospace', 'font-size': 4.6, 'font-weight': 'normal', 'font-style': 'normal', 'letter-spacing': 0 });
-    const dataText = (field, x, y, text, extra = {}) => ink.append(svgNode('text', { x, y, 'data-field': field, 'xml:space': 'preserve', ...extra }, text));
-    // Amount in separate boxes, right-aligned EUR and two mandatory cents.
-    [...fields.euros].forEach((digit, i) => dataText('euros', 153.38 + (8 - fields.euros.length + i) * 5.08, 29.633333, digit, { 'text-anchor': 'middle' }));
-    [...fields.cents].forEach((digit, i) => dataText('cents', 199.02 + i * 5.08, 29.633333, digit, { 'text-anchor': 'middle' }));
-    dataText('account', 35.56, 63.5, fields.account);
-    dataText('bank', 35.56, 71.966667, fields.bank);
-    dataText('beneficiary', 35.56, 80, fields.beneficiary);
-    dataText('street', 35.56, 84, fields.street);
-    dataText('locality', 35.56, 88, fields.locality);
-    dataText('reference', 68.58, 97.366667, fields.reference);
-    // The narrower code boxes use a fixed 10 cpi pitch; no content-based fitting.
-    dataText('code', 198.12, 12.7, fields.code, { 'font-size': 4.4, 'letter-spacing': -.1 });
+    const dataText = (field, value) => {
+      const grid = grids[field];
+      // Keep a letter and its combining accents in one cell without normalising
+      // the value. Spaces in names/references reserve an empty cell.
+      const characters = value.match(/\P{M}\p{M}*/gu) || [];
+      const offset = field === 'euros' ? grid.count - characters.length : 0;
+      characters.forEach((character, i) => ink.append(svgNode('text', {
+        x: grid.x + grid.width / 2 + (offset + i) * grid.pitch,
+        y: grid.y + grid.height / 2,
+        'data-field': field, 'xml:space': 'preserve', 'text-anchor': 'middle', 'dominant-baseline': 'central',
+        ...(field === 'code' ? { 'font-size': 4.4 } : {}),
+      }, character)));
+    };
+    for (const field of ['euros', 'cents', 'account', 'bank', 'beneficiary', 'street', 'locality', 'reference', 'code']) {
+      // In box-filling mode the IBAN has one character per cell, without the
+      // presentation-only grouping spaces. The accessible description keeps them.
+      dataText(field, field === 'account' ? fields.account.replace(/ /g, '') : fields[field]);
+    }
     svg.append(artwork, ink);
     return svg;
   }
@@ -98,13 +110,7 @@
     section.setAttribute('aria-label', 'Bulletin de virement');
     const header = append(el('div', 'transfer-header'), el('h3', '', 'Bulletin de virement'),
       el('p', '', `Facture ${data.id}${transfer.dueDate ? ' · Échéance : ' + date(transfer.dueDate) : ''}`));
-    const source = el('a', '', 'Directives Febelfin');
-    source.href = 'https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf';
-    source.target = '_blank';
-    source.rel = 'noopener noreferrer';
-    section.append(header, transferForm(fields),
-      el('p', 'transfer-print-help', 'Impression : A4 portrait · 100 % / Taille réelle · Couleur · Recto uniquement. Le bulletin mesure 210 × 101,6 mm et occupe une page séparée.'),
-      append(el('p', 'transfer-help'), el('span', '', 'Gabarit adapté des '), source, el('span', '', '. Vérifiez les données reconnues par votre application bancaire.')));
+    section.append(header, transferForm(fields));
     return section;
   }
   function partyBlock(p, label) {

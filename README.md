@@ -134,6 +134,13 @@ après la facture. À l’écran, l’ensemble est réduit proportionnellement s
 déplacer les champs. Les zones du donneur d’ordre, de signature et de date
 d’exécution restent vierges ; l’échéance de facture figure hors du formulaire.
 
+Chaque caractère est centré dans sa case. L’IBAN occupe les cases sans espaces
+de séparation ; les espaces des noms, adresses et communications réservent une
+case vide. La communication conserve ses `+` et `/` et commence dans la première
+case de sa ligne. Les consignes d’impression et les références restent dans la
+documentation et le mode d’emploi ; aucun paragraphe d’instructions n’est ajouté
+sous le bulletin à l’écran ou dans le PDF.
+
 Les données sont présentées en majuscules dans le bulletin, avec leurs accents.
 Le XML et les valeurs extraites ne sont pas modifiés. Une entité doublement
 échappée, telle que `&amp;apos;` dans le XML, n’est pas réparée par l’application.
@@ -143,9 +150,9 @@ prévues, un message explique l’absence du bulletin. Aucune valeur n’est cou
 abrégée ou imprimée avec une police réduite pour la faire entrer. Les informations
 de facture et de paiement restent consultables.
 
-Cette adaptation suit les cotes du guide public Febelfin ; son décor est
-reconstruit d’après le modèle publié et ses couleurs sont des approximations
-RVB. Ce n’est pas le fichier maître d’impression de Febelfin, ni un formulaire
+Cette adaptation suit l’option de remplissage par cases prévue par le guide
+public Febelfin ; son décor est reconstruit d’après le modèle publié et ses
+couleurs sont des approximations RVB. Ce n’est pas le fichier maître d’impression de Febelfin, ni un formulaire
 homologué. La lecture par les applications bancaires **reste à tester** : après
 un scan, toujours vérifier les champs reconnus. L’application ne transmet aucun
 ordre et le contrôle de l’IBAN ne vérifie ni l’existence du compte ni son titulaire.
@@ -200,10 +207,13 @@ gabarit et l’absence de mutation des données. Les résultats de cette candida
 et les contrôles visuels sont consignés dans la
 [section de vérification v0.1.6](docs/technical-design.md#104-vérifications-de-la-candidate-v016).
 
-Le 31 octobre 2026, les **49 tests sur 49 passent** : 14 lecteur XML, 18 paiement,
-15 application et 2 construction/version. Le build et le contrôle du diff
-réussissent. L’exemple 07 a été inspecté sur ordinateur et à une largeur mobile
-de 390 pixels, sans débordement horizontal. Un contrôle local d’un XML privé a
+Le 31 octobre 2026, après la correction du centrage, les **51 tests sur 51 passent** :
+14 lecteur XML, 18 paiement, 17 application et 2 construction/version. Les tests
+comparent notamment la position de chaque graphème au centre de sa case, les
+limites de champs et la conservation des accents. Le build et le contrôle du
+diff réussissent après cette correction. L’exemple 07 a été réinspecté
+sur ordinateur et à une largeur mobile de 390 pixels, sans débordement horizontal
+et sans les deux paragraphes sous le bulletin. Un contrôle local d’un XML privé a
 confirmé la conservation du fichier et des valeurs extraites, sans publication
 de ses données.
 

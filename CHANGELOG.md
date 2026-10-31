@@ -8,6 +8,13 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 - Bulletin vectoriel adapté au modèle du guide Febelfin : format fixe de
   210 × 101,6 mm, zones et positions physiques des données, montant en huit
   cases euros et deux cases centimes, code `02` ou `03` selon la communication.
+- Un caractère centré dans chaque case, selon l’option de remplissage par cases
+  du guide Febelfin : IBAN sans espaces de séparation, espaces des textes
+  conservés comme cases vides, communication depuis la première case avec ses
+  signes `+` et `/`. Le décor et le texte utilisent la même grille.
+- Suppression des deux paragraphes sous le bulletin, à l’écran et à l’impression.
+  Les consignes d’impression et références restent dans la documentation et le
+  mode d’emploi.
 - Impression sur une page A4 séparée, à 100 % / taille réelle, en couleur et
   recto uniquement. L’aperçu écran réduit le formulaire dans son ensemble sans
   redistribuer les champs. Les marges internes conservent les 186 mm utiles de
@@ -23,11 +30,14 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 - Conservation du XML et des valeurs extraites, y compris les textes mal
   échappés. Les contrôles supplémentaires ne constituent pas une validation Peppol.
 - Exemple 07 adapté avec un nom fictif assez court pour exercer le gabarit.
-- **49 tests sur 49 passent** : 14 lecteur XML, 18 paiement, 15 application et
-  2 construction/version. Build et contrôle du diff réussis le 31 octobre 2026.
-- Exemple 07 inspecté sur ordinateur et à 390 × 844 pixels, sans débordement
-  horizontal. Contrôle local d’une facture privée : gabarit admissible, fichier
-  et modèle inchangés, entités littérales conservées, aucune donnée privée publiée.
+- **51 tests sur 51 passent** après correction du centrage : 14 lecteur XML,
+  18 paiement, 17 application et 2 construction/version. Positions des graphèmes
+  comparées aux centres des cases, limites de champs et accents décomposés testés
+  sans modification de la source. Build et contrôle du diff réussis après correction.
+- Exemple 07 réinspecté sur ordinateur et à 390 × 844 pixels, sans débordement
+  horizontal et sans les deux paragraphes sous le bulletin. Contrôle local d’une
+  facture privée : gabarit admissible, fichier et modèle inchangés, entités
+  littérales conservées, aucune donnée privée publiée.
 - L’impression depuis le navigateur intégré n’a pas produit de PDF exploitable.
   La taille réelle en PDF/papier et la reconnaissance bancaire restent à vérifier.
   Le décor commence à environ 2,17 mm du bord : une imprimante non bord à bord

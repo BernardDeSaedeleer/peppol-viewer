@@ -117,8 +117,6 @@ main { flex: 1; min-width: 0; width: 100%; }
 .invoice .transfer-header h3 { color: var(--ink); font-size: 14px; letter-spacing: 0; margin: 0 0 6px; }
 .transfer-header p { color: var(--muted); font-size: 12px; margin: 0; }
 .transfer-slip { display: block; width: 100%; height: auto; aspect-ratio: 210 / 101.6; overflow: visible; }
-.transfer-help, .transfer-print-help { margin: 10px 0 0; color: var(--muted); font: 11px/1.6 Arial, sans-serif; }
-.transfer-help a { color: inherit; text-underline-offset: 2px; }
 @page {
   size: A4;
   margin: 12mm 0 16mm;
@@ -194,8 +192,6 @@ main { flex: 1; min-width: 0; width: 100%; }
   .invoice .transfer-header h3 { font-size: 11pt; margin: 0 0 2mm; }
   .transfer-header p { font-size: 9pt; }
   .transfer-slip { width: 210mm; height: 101.6mm; max-width: none; }
-  .transfer-print-help { display: none; }
-  .transfer-help { margin: 4mm 12mm 0; font-size: 8pt; }
   .invoice, .invoice * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .app-footer a{color:inherit;text-underline-offset:3px}.app-footer a:hover{color:var(--accent)}.app-footer a:focus-visible{outline:3px solid #3c83b9;outline-offset:4px}

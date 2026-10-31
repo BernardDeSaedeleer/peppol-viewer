@@ -41,6 +41,22 @@ function harness() {
 const xml = fs.readFileSync(new URL('fixtures/base-example.xml', import.meta.url), 'utf8');
 const transferXml = fs.readFileSync(new URL('../exemples/07-bulletin-virement.xml', import.meta.url), 'utf8');
 
+function formFields(svg, name) {
+  return Array.from(svg.getElementsByTagName('text')).filter(node => node.getAttribute('data-field') === name);
+}
+function assertCentredInCell(svg, node) {
+  const x = Number(node.getAttribute('x')), y = Number(node.getAttribute('y'));
+  const width = node.getAttribute('data-field') === 'code' ? 2.54 : 4.04;
+  const cells = Array.from(svg.getElementsByTagName('rect')).filter(rect =>
+    Math.abs(Number(rect.getAttribute('width')) - width) < 0.000001 &&
+    Math.abs(Number(rect.getAttribute('x')) + width / 2 - x) < 0.000001 &&
+    Math.abs(Number(rect.getAttribute('y')) + Number(rect.getAttribute('height')) / 2 - y) < 0.000001);
+  assert.equal(cells.length, 1, `${node.getAttribute('data-field')} ${JSON.stringify(node.textContent)} must occupy exactly one drawn cell`);
+  assert.equal(node.getAttribute('text-anchor'), 'middle');
+  assert.equal(node.getAttribute('dominant-baseline'), 'central');
+  return cells[0];
+}
+
 test('Belgian payment information and the final slip show the same structured reference', () => {
   const h = harness();
   h.registered[0].execute({ xml: transferXml });
@@ -82,7 +98,7 @@ test('free payment references and beneficiary names are never interpreted as mar
   assert.doesNotMatch(invoice.textContent, /Communication structurée/);
 });
 
-test('the form keeps complete financial fields at Febelfin physical dimensions and baselines', () => {
+test('the form keeps complete financial fields centred in its actual cells at physical dimensions', () => {
   const h = harness();
   const withBank = transferXml.replace('</cac:PayeeFinancialAccount>', '<cac:FinancialInstitutionBranch><cbc:ID>DEMOBEBB</cbc:ID></cac:FinancialInstitutionBranch></cac:PayeeFinancialAccount>');
   h.registered[0].execute({ xml: withBank });
@@ -97,27 +113,79 @@ test('the form keeps complete financial fields at Febelfin physical dimensions a
   const text = name => values(name).map(node => node.textContent).join('');
   assert.equal(text('euros'), '292');
   assert.equal(text('cents'), '82');
-  assert.equal(text('account'), 'BE68 5390 0754 7034');
+  assert.equal(text('account'), 'BE68539007547034');
   assert.equal(text('bank'), 'DEMOBEBB');
   assert.equal(text('beneficiary'), 'ATELIER PIXEL DÉMO');
   assert.equal(text('street'), 'RUE DES EXEMPLES 12');
   assert.equal(text('locality'), 'BE 0000 VILLE-DÉMO');
   assert.equal(text('reference'), '+++202/6000/10195+++');
   assert.equal(text('code'), '03');
-  // Values are placed against the guide's independently specified millimetre
-  // baselines, rather than against the screen's responsive CSS box dimensions.
-  assert.equal(Number(values('account')[0].getAttribute('x')), 35.56);
-  assert.equal(Number(values('account')[0].getAttribute('y')), 63.5);
-  assert.ok(Math.abs(Number(values('bank')[0].getAttribute('y')) - 17 * 25.4 / 6) < 0.000001);
-  assert.equal(Number(values('beneficiary')[0].getAttribute('y')), 80);
-  assert.equal(Number(values('street')[0].getAttribute('y')), 84);
-  assert.equal(Number(values('locality')[0].getAttribute('y')), 88);
-  assert.equal(Number(values('reference')[0].getAttribute('x')), 68.58);
-  assert.ok(Math.abs(Number(values('reference')[0].getAttribute('y')) - 23 * 25.4 / 6) < 0.000001);
-  assert.ok(Math.abs(Number(values('euros')[0].getAttribute('y')) - 7 * 25.4 / 6) < 0.000001);
-  assert.equal(Number(values('code')[0].getAttribute('x')), 198.12);
-  assert.equal(Number(values('code')[0].getAttribute('y')), 12.7);
+  // Read the independently drawn rectangles: a shared wrong offset would not
+  // be caught by checking text positions against another copy of the renderer.
+  for (const node of fields) assertCentredInCell(svg, node);
+  for (const [name, top] of [['account', 58.02], ['bank', 66.39], ['beneficiary', 75.62], ['street', 79.95], ['locality', 84.14], ['reference', 91.79]]) {
+    const first = assertCentredInCell(svg, values(name)[0]);
+    assert.equal(Number(first.getAttribute('x')), 34.52, `${name} begins in the first cell`);
+    assert.equal(Number(first.getAttribute('y')), top);
+  }
+  const cells = Array.from(svg.getElementsByTagName('rect'));
+  const amountCells = cells.filter(cell => Number(cell.getAttribute('y')) === 24.10 && Number(cell.getAttribute('width')) === 4.04);
+  const euroCells = amountCells.filter(cell => Number(cell.getAttribute('x')) >= 151.36 && Number(cell.getAttribute('x')) < 197);
+  const centCells = amountCells.filter(cell => Number(cell.getAttribute('x')) >= 197);
+  assert.equal(euroCells.length, 8);
+  assert.equal(centCells.length, 2);
+  assert.deepEqual(values('euros').map(node => assertCentredInCell(svg, node)), euroCells.slice(-3));
+  assert.deepEqual(values('cents').map(node => assertCentredInCell(svg, node)), centCells);
+  assert.equal(values('code').length, 2);
+  assert.equal(values('account').length, 16);
   assert.match(svg.getElementsByTagName('desc')[0].textContent, /292,82 EUR.*BE68 5390 0754 7034.*\+\+\+202\/6000\/10195\+\+\+/);
+  const slip = svg.parentNode;
+  assert.doesNotMatch(slip.textContent, /Impression :|Gabarit adapté|Directives Febelfin|Vérifiez les données/);
+  assert.equal(slip.getElementsByTagName('a').length, 0);
+});
+
+test('full rows preserve spaces and every character of free references and foreign IBANs', () => {
+  const h = harness();
+  const beneficiary = 'ABCDEFGHIJKLMNOPQRSTUV XYZ';
+  const reference = 'ABCDEFGHIJKLMN OPQRSTUVWXYZ 123456';
+  const iban = 'DE36000000000000000000'; // Same synthetic valid account as payment tests.
+  assert.equal(beneficiary.length, 26);
+  assert.equal(reference.length, 34);
+  h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', beneficiary)
+    .replace('PaymentMeansCode>1<', 'PaymentMeansCode>58<')
+    .replace('202600010195', reference).replace('BE68539007547034', iban) });
+  const invoice = h.doc.getElementById('invoice');
+  const svg = invoice.getElementsByTagName('svg')[0];
+  assert.ok(svg);
+  for (const [name, expected, top] of [['beneficiary', beneficiary, 75.62], ['reference', reference, 91.79], ['account', iban, 58.02]]) {
+    const nodes = formFields(svg, name);
+    assert.equal(nodes.map(node => node.textContent).join(''), expected);
+    assert.equal(nodes.length, expected.length);
+    const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === top && Number(cell.getAttribute('width')) === 4.04);
+    assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn.slice(0, expected.length));
+    for (let i = 0; i < expected.length; i++) if (expected[i] === ' ') assert.equal(nodes[i].textContent, ' ');
+  }
+  assert.equal(formFields(svg, 'code').map(node => node.textContent).join(''), '02');
+  assert.match(invoice.firstChild.textContent, new RegExp('Compte / IBAN : ' + iban));
+  assert.ok(invoice.firstChild.textContent.includes('Communication : ' + reference));
+  assert.match(svg.getElementsByTagName('desc')[0].textContent, /IBAN DE36 0000 0000 0000 0000 00/);
+});
+
+test('a decomposed accent stays with its letter in one cell without normalising the source', () => {
+  const h = harness();
+  const name = 'E\u0301TOILE DE\u0301MO';
+  h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', name) });
+  const invoice = h.doc.getElementById('invoice');
+  const svg = invoice.getElementsByTagName('svg')[0];
+  const nodes = formFields(svg, 'beneficiary');
+  assert.equal(nodes.map(node => node.textContent).join(''), name);
+  assert.equal(nodes.length, 11);
+  assert.equal(nodes[0].textContent, 'E\u0301');
+  assert.equal(nodes[8].textContent, 'E\u0301');
+  const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === 75.62 && Number(cell.getAttribute('width')) === 4.04);
+  assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn.slice(0, 11));
+  assert.ok(invoice.firstChild.textContent.includes(name));
+  assert.ok(!invoice.firstChild.textContent.includes(name.normalize('NFC')));
 });
 
 test('payer, signature and execution date stay blank while invoice due date remains outside the form', () => {
@@ -127,7 +195,7 @@ test('payer, signature and execution date stay blank while invoice due date rema
   const svg = slip.getElementsByTagName('svg')[0];
   const printedFields = Array.from(svg.getElementsByTagName('text')).filter(node => node.hasAttribute('data-field'));
   assert.deepEqual([...new Set(printedFields.map(node => node.getAttribute('data-field')))].sort(),
-    ['account', 'bank', 'beneficiary', 'cents', 'code', 'euros', 'locality', 'reference', 'street']);
+    ['account', 'beneficiary', 'cents', 'code', 'euros', 'locality', 'reference', 'street']);
   assert.doesNotMatch(svg.textContent, /Bureau Horizon|BUREAU HORIZON|19\/11\/2026|2026-11-19/);
   assert.match(slip.firstChild.textContent, /Échéance : 19\/11\/2026/);
   assert.match(svg.textContent, /Signature\(s\).*Date d’exécution souhaitée dans le futur.*Compte donneur d’ordre/s);
