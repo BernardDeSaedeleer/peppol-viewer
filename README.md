@@ -6,7 +6,7 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.5 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Peppol-Viewer-0.1.5.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.5)
+**[Télécharger Peppol Viewer 0.1.6 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Peppol-Viewer-0.1.6.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.6)
 
 1. Téléchargez l’archive ci-dessus.
 2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
@@ -23,7 +23,7 @@ nécessite Internet ; aucune vérification automatique n’est effectuée.
 
 Les six fichiers sont aussi disponibles séparément sur la page de la version,
 avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.5/Mode-emploi.txt).
+[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -32,6 +32,13 @@ La **v0.1.5, publiée le 30 octobre 2026**, ajoute un bulletin
 d’aide au paiement en fin de facture lorsque les informations permettent de
 présenter un virement sans ambiguïté, ainsi que le formatage des communications
 structurées belges valides.
+
+La **v0.1.6, publiée le 31 octobre 2026**, remplace
+ce bulletin adaptatif par un gabarit inspiré des directives Febelfin, avec des
+dimensions d’impression fixes de **210 × 101,6 mm**. Cette préversion ajoute les
+raisons d’exclusion du bulletin et un comptage commun des caractères accentués
+pour leur placement dans les cases, sans modifier les données XML. La mesure
+physique du PDF ou du papier et la reconnaissance bancaire restent à vérifier.
 
 Auteur : [Bernard De Saedeleer](https://www.linkedin.com/in/bernard-de-saedeleer-059070aa).
 © 2026 Bernard De Saedeleer.
@@ -69,17 +76,23 @@ Déposer un fichier pendant la consultation remplace le document après lecture 
 Une erreur conserve l’aperçu précédent et le signale explicitement.
 « Imprimer / PDF » utilise la boîte de dialogue du navigateur : sélectionner
 « Enregistrer au format PDF ». Choisir **A4**, **portrait**, une échelle de **100 %**
-et les **marges par défaut**. Désactiver les en-têtes/pieds de page automatiques
+ou **Taille réelle**, et les **marges par défaut** pour laisser agir la feuille de
+style. Ne pas sélectionner « Ajuster à la page ». Pour le bulletin, imprimer en
+**couleur**, en **recto uniquement**. Désactiver les en-têtes/pieds de page automatiques
 du navigateur : la feuille de style prévoit son propre « Page x / y » dans les
 navigateurs compatibles. Les lignes d’un tableau large défilent horizontalement sur mobile.
 
 ## Exemples de démonstration
 
-Le dossier [`exemples`](exemples/README.md) contient sept documents de démonstration
+Le dossier [`exemples`](exemples/README.md) contient douze documents de démonstration
 et deux fichiers volontairement invalides. Les données sont fictives, sauf l’IBAN
 du spécimen public Febelfin utilisé dans l’exemple de bulletin : aucun paiement ne
 doit être effectué. Le guide précise les montants attendus et les fonctionnalités
-à tester. Ces fichiers sont exclus de la publication statique.
+à tester. Les exemples 08 à 12 permettent de comparer les accents précomposés et
+décomposés, les limites de 26/27 caractères, une communication trop longue et un
+IBAN invalide. Ces fichiers sont exclus de la publication statique.
+
+[Télécharger les exemples fictifs et leur guide](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Exemples-Peppol-Viewer-0.1.6.zip).
 
 ## Périmètre
 
@@ -102,7 +115,7 @@ Les données manquantes sont affichées par un tiret avec avertissement pour les
 Les prix affichés sont les prix nets fournis par le XML ; le détail d’une remise déjà
 intégrée au prix n’est pas développé. Le XML original reste la référence.
 
-### Bulletin d’aide au paiement — v0.1.5
+### Bulletin d’aide au paiement — v0.1.6
 
 Le bulletin reprend le montant restant à payer, le bénéficiaire, l’IBAN et la
 communication à la fin de la facture. Il apparaît uniquement pour une facture en
@@ -116,18 +129,50 @@ structurée valide. Les avoirs, prélèvements, mandats, cartes, espèces, factu
 soldées, autres devises et comptes multiples n’affichent pas ce bulletin. La présence
 d’une carte exclut aussi le bulletin si le code indique un virement ; plusieurs
 identifiants bancaires dans un seul compte sont également refusés.
+Dans chaque cas d’exclusion, une explication concise accompagne la mention
+« Bulletin de virement indisponible ». Cela concerne aussi les avoirs, les
+paiements en espèces et les autres devises : la facture reste affichée et n’est
+pas déclarée invalide pour autant. Si plusieurs conditions empêchent le bulletin,
+seule la première raison rencontrée est indiquée.
 Une communication de douze chiffres avec une clé modulo 97 valide est présentée
 sous la forme `+++ddd/dddd/ddddd+++` dans le contexte d’un compte belge ; les
 autres références conservent leur texte.
 
-Le fond saumon, les repères rouges et la police monospace rappellent le bulletin
-belge. Ses dimensions s’adaptent à l’écran et à l’impression : il s’agit d’une
-**aide à la saisie du paiement, pas d’un formulaire bancaire homologué**.
-L’application ne transmet aucun ordre et le contrôle de l’IBAN ne vérifie ni
-l’existence du compte ni son titulaire. Le bloc est prévu pour rester entier à
-l’impression. Le rendu à l’écran a été vérifié sur l’exemple 07, sur ordinateur
-et à la largeur mobile. Un PDF A4 fourni par l’utilisateur a également été
-contrôlé : le bulletin reste entier en page 3, après les deux pages de facture.
+Le gabarit vectoriel conserve la disposition du formulaire belge : fond saumon,
+repères rouges, données noires en police monospace et zones du donneur d’ordre.
+Il mesure **210 × 101,6 mm à l’impression** et commence sur une page séparée,
+après la facture. À l’écran, l’ensemble est réduit proportionnellement sans
+déplacer les champs. Les zones du donneur d’ordre, de signature et de date
+d’exécution restent vierges ; l’échéance de facture figure hors du formulaire.
+
+Chaque caractère est centré dans sa case. L’IBAN occupe les cases sans espaces
+de séparation ; les espaces des noms, adresses et communications réservent une
+case vide. La communication conserve ses `+` et `/` et commence dans la première
+case de sa ligne. Les consignes d’impression et les références restent dans la
+documentation et le mode d’emploi ; aucun paragraphe d’instructions n’est ajouté
+sous le bulletin à l’écran ou dans le PDF.
+
+Les données sont présentées en majuscules dans le bulletin, avec leurs accents.
+Le XML et les valeurs extraites ne sont pas modifiés. Une entité doublement
+échappée, telle que `&amp;apos;` dans le XML, n’est pas réparée par l’application.
+Si un nom ou une ligne d’adresse dépasse 26 caractères affichés, une communication libre
+34 caractères, ou si un autre champ ne peut pas être représenté dans les zones
+prévues, un message explique l’absence du bulletin. Aucune valeur n’est coupée,
+abrégée ou imprimée avec une police réduite pour la faire entrer. Les informations
+de facture et de paiement restent consultables.
+
+Une lettre et ses accents combinants comptent comme un seul caractère affiché,
+dans une seule case. Une ligne de 26 lettres accentuées tient donc de la même
+façon, que le XML contienne des lettres accentuées précomposées ou des lettres
+suivies d’un accent combinant ; une ligne de 27 caractères est refusée. Le texte
+source conserve son encodage et sa représentation Unicode.
+
+Cette adaptation suit l’option de remplissage par cases prévue par le guide
+public Febelfin ; son décor est reconstruit d’après le modèle publié et ses
+couleurs sont des approximations RVB. Ce n’est pas le fichier maître d’impression de Febelfin, ni un formulaire
+homologué. La lecture par les applications bancaires **reste à tester** : après
+un scan, toujours vérifier les champs reconnus. L’application ne transmet aucun
+ordre et le contrôle de l’IBAN ne vérifie ni l’existence du compte ni son titulaire.
 Les règles détaillées et les références Febelfin figurent dans la
 [conception technique](docs/technical-design.md#65-bulletin-daide-au-paiement).
 
@@ -172,22 +217,39 @@ rappellent le XML et la lecture comptable. Cette image est chargée localement,
 sans service externe. Les mouvements restent discrets, sans animation en boucle,
 et sont désactivés si le navigateur demande de réduire les animations.
 
-Le 30 octobre 2026, les **37 tests sur 37 passent** : 14 pour le lecteur XML,
-11 pour le paiement, 10 pour l’application et 2 pour les versions. Ils couvrent
-notamment la précision décimale, les exclusions du bulletin, les entrées refusées,
-l’injection de balises, la conservation de l’aperçu après erreur et l’impression.
+La suite couvre la précision décimale, les exclusions du bulletin, les entrées
+refusées, l’injection de balises, la conservation de l’aperçu après erreur et la
+délégation de l’impression. Pour la v0.1.6, elle vérifie aussi les limites du
+gabarit et l’absence de mutation des données. Les résultats de cette version
+et les contrôles visuels sont consignés dans la
+[section de vérification v0.1.6](docs/technical-design.md#104-vérifications-de-la-v016).
 
-L’exemple 07 a été contrôlé dans le navigateur intégré sur ordinateur et avec une
-fenêtre de 390 × 844 pixels, sans débordement horizontal. Son ouverture par WebMCP
-natif a réussi. L’arbre d’accessibilité expose les valeurs complètes et masque les
-cases décoratives ; aucun audit complet avec lecteur d’écran n’a été effectué.
-Une facture privée a également servi à contrôler localement le parseur, sans copie
-partagée. Son PDF natif, produit par Microsoft Print To PDF et fourni ensuite par
-l’utilisateur, a été inspecté sur ses trois pages : aucune coupure ni superposition
-observée, bulletin entier et données de paiement conformes au XML. Ce contrôle
-porte sur cet exemplaire ; les autres navigateurs et réglages restent à vérifier.
-Les preuves et limites sont détaillées dans la
-[conception technique](docs/technical-design.md#103-contrôles-réalisés-pour-la-v015).
+Le 31 octobre 2026, la suite complète compte **57 tests sur 57 passants** :
+14 lecteur XML, 21 paiement, 20 application et 2 construction/version. Les tests
+comparent notamment la position de chaque graphème au centre de sa case, les
+limites de champs et la conservation des accents. Le build et le contrôle du
+diff réussissent après ces compléments. L’exemple 07 a été réinspecté
+sur ordinateur et à une largeur mobile de 390 pixels, sans débordement horizontal
+et sans les deux paragraphes sous le bulletin. Un contrôle local d’un XML privé a
+confirmé la conservation du fichier et des valeurs extraites, sans publication
+de ses données.
+
+Dans le navigateur intégré, **16 scénarios supplémentaires sur 16 réussissent** :
+raisons d’exclusion visibles, valeurs conservées intégralement, limites de
+26 et 27 caractères en NFC/NFD, cases exactes et disparition du message au retour
+à une facture admissible. Aucune erreur ni débordement horizontal n’a été observé.
+
+La tentative d’impression dans le navigateur intégré n’a pas produit de PDF
+exploitable. La taille physique à 100 %, le rendu papier et la reconnaissance
+bancaire restent donc à vérifier avant de considérer ces usages comme validés.
+Une imprimante qui n’imprime pas jusqu’aux bords peut rogner le décor, situé à
+environ 2,17 mm du bord ; l’option « Ajuster à la page » ne doit pas servir à
+compenser ce rognage, car elle réduit aussi le gabarit.
+
+Les **37 tests passants** et les contrôles écran/PDF du 30 octobre 2026 concernent
+la v0.1.5 : ils restent documentés comme historique, sans valider le nouveau
+gabarit de la v0.1.6. Aucun essai de reconnaissance par une application bancaire
+n’a encore été réalisé.
 
 ## Versionnement et publication
 
@@ -200,7 +262,8 @@ vérification de mise à jour n’est nécessaire à son affichage.
 Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
 - `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
-- `0.1.5` : dernière préversion publiée ; bulletin d’aide au paiement et présentation des communications structurées belges.
+- `0.1.5` : préversion du 30 octobre 2026 ; bulletin d’aide au paiement et présentation des communications structurées belges.
+- `0.1.6` : dernière préversion publiée, le 31 octobre 2026 ; gabarit Febelfin à dimensions fixes, exclusions explicites et accents combinants, sans modification des données XML.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
@@ -208,7 +271,7 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
 `node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
-`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.5`. Conserver chaque version
+`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.6`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.

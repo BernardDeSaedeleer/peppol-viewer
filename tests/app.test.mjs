@@ -21,6 +21,8 @@ function harness() {
   };
   const create = doc.createElement.bind(doc);
   doc.createElement = tag => patch(create(tag));
+  const createNS = doc.createElementNS.bind(doc);
+  doc.createElementNS = (namespace, tag) => patch(createNS(namespace, tag));
   const fragment = doc.createDocumentFragment.bind(doc);
   doc.createDocumentFragment = () => patch(fragment());
   patch(doc);
@@ -39,6 +41,30 @@ function harness() {
 const xml = fs.readFileSync(new URL('fixtures/base-example.xml', import.meta.url), 'utf8');
 const transferXml = fs.readFileSync(new URL('../exemples/07-bulletin-virement.xml', import.meta.url), 'utf8');
 
+function formFields(svg, name) {
+  return Array.from(svg.getElementsByTagName('text')).filter(node => node.getAttribute('data-field') === name);
+}
+function assertCentredInCell(svg, node) {
+  const x = Number(node.getAttribute('x')), y = Number(node.getAttribute('y'));
+  const width = node.getAttribute('data-field') === 'code' ? 2.54 : 4.04;
+  const cells = Array.from(svg.getElementsByTagName('rect')).filter(rect =>
+    Math.abs(Number(rect.getAttribute('width')) - width) < 0.000001 &&
+    Math.abs(Number(rect.getAttribute('x')) + width / 2 - x) < 0.000001 &&
+    Math.abs(Number(rect.getAttribute('y')) + Number(rect.getAttribute('height')) / 2 - y) < 0.000001);
+  assert.equal(cells.length, 1, `${node.getAttribute('data-field')} ${JSON.stringify(node.textContent)} must occupy exactly one drawn cell`);
+  assert.equal(node.getAttribute('text-anchor'), 'middle');
+  assert.equal(node.getAttribute('dominant-baseline'), 'central');
+  return cells[0];
+}
+function assertUnavailable(invoice, reasonPattern) {
+  assert.equal(invoice.getElementsByTagName('svg').length, 0);
+  const section = Array.from(invoice.getElementsByTagName('section')).find(node => node.className === 'details-section transfer-unavailable');
+  assert.ok(section, 'the invoice explains why the payment slip is unavailable');
+  assert.equal(section.getElementsByTagName('h3')[0].textContent, 'Bulletin de virement indisponible');
+  assert.match(section.getElementsByTagName('p')[0].textContent, reasonPattern);
+  assert.match(section.textContent, /Les données de la facture restent affichées intégralement/);
+}
+
 test('Belgian payment information and the final slip show the same structured reference', () => {
   const h = harness();
   h.registered[0].execute({ xml: transferXml });
@@ -46,36 +72,264 @@ test('Belgian payment information and the final slip show the same structured re
   const slip = invoice.lastChild;
   assert.equal(slip.getAttribute('aria-label'), 'Bulletin de virement');
   assert.match(slip.textContent, /\+\+\+202\/6000\/10195\+\+\+/);
-  assert.match(slip.textContent, /Atelier Pixel/);
-  assert.match(slip.textContent, /Rue des Exemples/);
+  assert.match(slip.textContent, /ATELIER PIXEL DÉMO/);
+  assert.match(slip.textContent, /RUE DES EXEMPLES/);
   assert.match(slip.textContent, /19\/11\/2026/);
   assert.match(invoice.textContent, /Communication structurée : \+\+\+202\/6000\/10195\+\+\+/);
   assert.match(slip.previousSibling.textContent, /DOCUMENT FICTIF/);
 });
 
-test('a replaced document cannot retain the preceding payment slip', () => {
+test('replacing invoices cannot retain either an old payment slip or its exclusion reason', () => {
   const h = harness();
-  for (const next of [transferXml.replace('>292.82</cbc:PayableAmount>', '>0</cbc:PayableAmount>'),
-    fs.readFileSync(new URL('../exemples/04-note-de-credit.xml', import.meta.url), 'utf8'),
-    transferXml.replace('202600010195', '202600010196')]) {
+  for (const [next, reason] of [
+    [transferXml.replace('>292.82</cbc:PayableAmount>', '>0</cbc:PayableAmount>'), /montant.*nul/i],
+    [fs.readFileSync(new URL('../exemples/04-note-de-credit.xml', import.meta.url), 'utf8'), /note de crédit/i],
+    [transferXml.replace('202600010195', '202600010196'), /communication structurée.*valide/i],
+  ]) {
     h.registered[0].execute({ xml: transferXml });
-    assert.match(h.serialized(), /Bulletin de virement/);
+    assert.equal(h.doc.getElementById('invoice').getElementsByTagName('svg').length, 1);
+    assert.doesNotMatch(h.doc.getElementById('invoice').textContent, /indisponible/);
     h.registered[0].execute({ xml: next });
-    assert.doesNotMatch(h.serialized(), /Bulletin de virement/);
+    assertUnavailable(h.doc.getElementById('invoice'), reason);
+  }
+  h.registered[0].execute({ xml: transferXml });
+  assert.equal(h.doc.getElementById('invoice').getElementsByTagName('svg').length, 1);
+  assert.doesNotMatch(h.doc.getElementById('invoice').textContent, /indisponible/);
+});
+
+test('payment eligibility exclusions explain the cause while keeping invoice data visible', () => {
+  const h = harness();
+  const payment = transferXml.match(/<cac:PaymentMeans>.*?<\/cac:PaymentMeans>/s)[0];
+  const cases = [
+    [transferXml.replace('BE68539007547034', 'BE68539007547035'), /IBAN.*invalide/i, 'BE68539007547035'],
+    [transferXml.replace('<cbc:ID>BE68539007547034</cbc:ID>', ''), /IBAN.*absent/i],
+    [transferXml.replace('202600010195', 'REFERENCE LIBRE DEMO'), /communication structurée.*valide/i, 'REFERENCE LIBRE DEMO'],
+    [transferXml.replace('PaymentMeansCode>1<', 'PaymentMeansCode>59<'), /prélèvement/i, 'BE68539007547034'],
+    [transferXml.replace('DocumentCurrencyCode>EUR<', 'DocumentCurrencyCode>USD<'), /euros/i, 'USD'],
+    [transferXml.replace('>292.82</cbc:PayableAmount>', '>292.821</cbc:PayableAmount>'), /fraction de centime/i],
+    [transferXml.replace(payment, payment + payment), /plusieurs moyens de paiement/i, 'BE68539007547034'],
+    [transferXml.replace(payment, ''), /aucun moyen de paiement/i],
+  ];
+  for (const [source, reason, originalValue] of cases) {
+    h.registered[0].execute({ xml: source });
+    const invoice = h.doc.getElementById('invoice');
+    assertUnavailable(invoice, reason);
+    assert.match(invoice.firstChild.textContent, /DEMO-2026-007/);
+    assert.match(invoice.firstChild.textContent, /Atelier Pixel Démo/);
+    assert.match(invoice.firstChild.textContent, /Rue des Exemples 12/);
+    if (originalValue) assert.ok(invoice.firstChild.textContent.includes(originalValue), originalValue);
   }
 });
 
 test('free payment references and beneficiary names are never interpreted as markup', () => {
   const h = harness();
   const unsafe = transferXml.replace('PaymentMeansCode>1<', 'PaymentMeansCode>58<')
-    .replaceAll('Atelier Pixel — Société fictive', '&lt;img src=x onerror=alert(1)&gt;')
+    .replaceAll('Atelier Pixel Démo', '&lt;img src=x onerror=alert(1)&gt;')
     .replace('202600010195', '&lt;script&gt;alert(1)&lt;/script&gt;');
   h.registered[0].execute({ xml: unsafe });
   const invoice = h.doc.getElementById('invoice');
-  assert.equal(invoice.lastChild.getAttribute('aria-label'), 'Bulletin de virement');
+  assert.equal(invoice.getElementsByTagName('svg').length, 0);
+  assert.match(invoice.textContent, /Bulletin de virement indisponible/);
   for (const tag of ['img', 'script', 'iframe']) assert.equal(invoice.getElementsByTagName(tag).length, 0);
-  assert.match(invoice.lastChild.textContent, /<script>alert\(1\)<\/script>/);
-  assert.doesNotMatch(invoice.lastChild.textContent, /Communication structurée/);
+  assert.match(invoice.textContent, /<img src=x onerror=alert\(1\)>/);
+  assert.match(invoice.textContent, /<script>alert\(1\)<\/script>/);
+  assert.doesNotMatch(invoice.textContent, /Communication structurée/);
+});
+
+test('the form keeps complete financial fields centred in its actual cells at physical dimensions', () => {
+  const h = harness();
+  const withBank = transferXml.replace('</cac:PayeeFinancialAccount>', '<cac:FinancialInstitutionBranch><cbc:ID>DEMOBEBB</cbc:ID></cac:FinancialInstitutionBranch></cac:PayeeFinancialAccount>');
+  h.registered[0].execute({ xml: withBank });
+  const svg = h.doc.getElementById('invoice').getElementsByTagName('svg')[0];
+  assert.ok(svg);
+  assert.equal(svg.namespaceURI, 'http://www.w3.org/2000/svg');
+  assert.equal(svg.getAttribute('width'), '210mm');
+  assert.equal(svg.getAttribute('height'), '101.6mm');
+  assert.equal(svg.getAttribute('viewBox'), '0 0 210 101.6');
+  const fields = Array.from(svg.getElementsByTagName('text')).filter(node => node.hasAttribute('data-field'));
+  const values = name => fields.filter(node => node.getAttribute('data-field') === name);
+  const text = name => values(name).map(node => node.textContent).join('');
+  assert.equal(text('euros'), '292');
+  assert.equal(text('cents'), '82');
+  assert.equal(text('account'), 'BE68539007547034');
+  assert.equal(text('bank'), 'DEMOBEBB');
+  assert.equal(text('beneficiary'), 'ATELIER PIXEL DÉMO');
+  assert.equal(text('street'), 'RUE DES EXEMPLES 12');
+  assert.equal(text('locality'), 'BE 0000 VILLE-DÉMO');
+  assert.equal(text('reference'), '+++202/6000/10195+++');
+  assert.equal(text('code'), '03');
+  // Read the independently drawn rectangles: a shared wrong offset would not
+  // be caught by checking text positions against another copy of the renderer.
+  for (const node of fields) assertCentredInCell(svg, node);
+  for (const [name, top] of [['account', 58.02], ['bank', 66.39], ['beneficiary', 75.62], ['street', 79.95], ['locality', 84.14], ['reference', 91.79]]) {
+    const first = assertCentredInCell(svg, values(name)[0]);
+    assert.equal(Number(first.getAttribute('x')), 34.52, `${name} begins in the first cell`);
+    assert.equal(Number(first.getAttribute('y')), top);
+  }
+  const cells = Array.from(svg.getElementsByTagName('rect'));
+  const amountCells = cells.filter(cell => Number(cell.getAttribute('y')) === 24.10 && Number(cell.getAttribute('width')) === 4.04);
+  const euroCells = amountCells.filter(cell => Number(cell.getAttribute('x')) >= 151.36 && Number(cell.getAttribute('x')) < 197);
+  const centCells = amountCells.filter(cell => Number(cell.getAttribute('x')) >= 197);
+  assert.equal(euroCells.length, 8);
+  assert.equal(centCells.length, 2);
+  assert.deepEqual(values('euros').map(node => assertCentredInCell(svg, node)), euroCells.slice(-3));
+  assert.deepEqual(values('cents').map(node => assertCentredInCell(svg, node)), centCells);
+  assert.equal(values('code').length, 2);
+  assert.equal(values('account').length, 16);
+  assert.match(svg.getElementsByTagName('desc')[0].textContent, /292,82 EUR.*BE68 5390 0754 7034.*\+\+\+202\/6000\/10195\+\+\+/);
+  const slip = svg.parentNode;
+  assert.doesNotMatch(slip.textContent, /Impression :|Gabarit adapté|Directives Febelfin|Vérifiez les données/);
+  assert.equal(slip.getElementsByTagName('a').length, 0);
+});
+
+test('full rows preserve spaces and every character of free references and foreign IBANs', () => {
+  const h = harness();
+  const beneficiary = 'ABCDEFGHIJKLMNOPQRSTUV XYZ';
+  const reference = 'ABCDEFGHIJKLMN OPQRSTUVWXYZ 123456';
+  const iban = 'DE36000000000000000000'; // Same synthetic valid account as payment tests.
+  assert.equal(beneficiary.length, 26);
+  assert.equal(reference.length, 34);
+  h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', beneficiary)
+    .replace('PaymentMeansCode>1<', 'PaymentMeansCode>58<')
+    .replace('202600010195', reference).replace('BE68539007547034', iban) });
+  const invoice = h.doc.getElementById('invoice');
+  const svg = invoice.getElementsByTagName('svg')[0];
+  assert.ok(svg);
+  for (const [name, expected, top] of [['beneficiary', beneficiary, 75.62], ['reference', reference, 91.79], ['account', iban, 58.02]]) {
+    const nodes = formFields(svg, name);
+    assert.equal(nodes.map(node => node.textContent).join(''), expected);
+    assert.equal(nodes.length, expected.length);
+    const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === top && Number(cell.getAttribute('width')) === 4.04);
+    assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn.slice(0, expected.length));
+    for (let i = 0; i < expected.length; i++) if (expected[i] === ' ') assert.equal(nodes[i].textContent, ' ');
+  }
+  assert.equal(formFields(svg, 'code').map(node => node.textContent).join(''), '02');
+  assert.match(invoice.firstChild.textContent, new RegExp('Compte / IBAN : ' + iban));
+  assert.ok(invoice.firstChild.textContent.includes('Communication : ' + reference));
+  assert.match(svg.getElementsByTagName('desc')[0].textContent, /IBAN DE36 0000 0000 0000 0000 00/);
+});
+
+test('a decomposed accent stays with its letter in one cell without normalising the source', () => {
+  const h = harness();
+  const name = 'E\u0301TOILE DE\u0301MO';
+  h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', name) });
+  const invoice = h.doc.getElementById('invoice');
+  const svg = invoice.getElementsByTagName('svg')[0];
+  const nodes = formFields(svg, 'beneficiary');
+  assert.equal(nodes.map(node => node.textContent).join(''), name);
+  assert.equal(nodes.length, 11);
+  assert.equal(nodes[0].textContent, 'E\u0301');
+  assert.equal(nodes[8].textContent, 'E\u0301');
+  const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === 75.62 && Number(cell.getAttribute('width')) === 4.04);
+  assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn.slice(0, 11));
+  assert.ok(invoice.firstChild.textContent.includes(name));
+  assert.ok(!invoice.firstChild.textContent.includes(name.normalize('NFC')));
+});
+
+test('composed and decomposed accented names and addresses fill 26 cells and exclude 27 without truncation', () => {
+  const h = harness();
+  for (const unit of ['é', 'e\u0301']) {
+    for (const [field, original, prefix, top] of [
+      ['beneficiary', 'Atelier Pixel Démo', '', 75.62],
+      ['street', 'Rue des Exemples 12', '', 79.95],
+      ['locality', 'Ville-Démo', 'BE 0000 ', 84.14],
+    ]) {
+      for (const count of [26, 27]) {
+        const value = unit.repeat(count - prefix.length);
+        h.registered[0].execute({ xml: transferXml.replaceAll(original, value) });
+        const invoice = h.doc.getElementById('invoice');
+        assert.ok(invoice.firstChild.textContent.includes(value), 'the complete original spelling remains in the invoice');
+        if (unit === 'e\u0301') assert.ok(!invoice.firstChild.textContent.includes(value.normalize('NFC')));
+        if (count === 27) {
+          assertUnavailable(invoice, /26 caractères/);
+          continue;
+        }
+        const svg = invoice.getElementsByTagName('svg')[0];
+        assert.ok(svg, `${field} fits 26 cells with ${JSON.stringify(unit)}`);
+        const nodes = formFields(svg, field);
+        assert.equal(nodes.length, 26);
+        assert.equal(nodes.map(node => node.textContent).join(''), prefix + value.toUpperCase());
+        const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === top && Number(cell.getAttribute('width')) === 4.04);
+        assert.equal(drawn.length, 26);
+        assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn);
+      }
+    }
+  }
+});
+
+test('letters expanded by uppercasing are counted as printed without changing the invoice spelling', () => {
+  const h = harness();
+  for (const prefixLength of [24, 25]) {
+    const name = 'A'.repeat(prefixLength) + 'ß';
+    h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', name) });
+    const invoice = h.doc.getElementById('invoice');
+    assert.ok(invoice.firstChild.textContent.includes(name));
+    if (prefixLength === 25) {
+      assertUnavailable(invoice, /26 caractères/);
+      continue;
+    }
+    const svg = invoice.getElementsByTagName('svg')[0];
+    const nodes = formFields(svg, 'beneficiary');
+    assert.equal(nodes.length, 26);
+    assert.equal(nodes.map(node => node.textContent).join(''), 'A'.repeat(24) + 'SS');
+    for (const node of nodes) assertCentredInCell(svg, node);
+  }
+});
+
+test('payer, signature and execution date stay blank while invoice due date remains outside the form', () => {
+  const h = harness();
+  h.registered[0].execute({ xml: transferXml });
+  const slip = h.doc.getElementById('invoice').lastChild;
+  const svg = slip.getElementsByTagName('svg')[0];
+  const printedFields = Array.from(svg.getElementsByTagName('text')).filter(node => node.hasAttribute('data-field'));
+  assert.deepEqual([...new Set(printedFields.map(node => node.getAttribute('data-field')))].sort(),
+    ['account', 'beneficiary', 'cents', 'code', 'euros', 'locality', 'reference', 'street']);
+  assert.doesNotMatch(svg.textContent, /Bureau Horizon|BUREAU HORIZON|19\/11\/2026|2026-11-19/);
+  assert.match(slip.firstChild.textContent, /Échéance : 19\/11\/2026/);
+  assert.match(svg.textContent, /Signature\(s\).*Date d’exécution souhaitée dans le futur.*Compte donneur d’ordre/s);
+});
+
+test('unsupported field lengths show a reason, preserve full invoice values and reset on replacement', () => {
+  const h = harness();
+  const reference = 'REFERENCE DE FACTURE TROP LONGUE POUR LE BULLETIN 123456789';
+  const long = transferXml.replace('PaymentMeansCode>1<', 'PaymentMeansCode>58<').replace('202600010195', reference);
+  h.registered[0].execute({ xml: long });
+  let invoice = h.doc.getElementById('invoice');
+  assert.equal(invoice.getElementsByTagName('svg').length, 0);
+  assert.match(invoice.textContent, /Bulletin de virement indisponible/);
+  assert.match(invoice.textContent, /34 caractères/);
+  assert.ok(invoice.textContent.includes('Communication : ' + reference));
+  assert.match(invoice.textContent, /Compte \/ IBAN : BE68539007547034/);
+  assert.match(invoice.textContent, /292,82/);
+  h.registered[0].execute({ xml: transferXml });
+  invoice = h.doc.getElementById('invoice');
+  assert.equal(invoice.getElementsByTagName('svg').length, 1);
+  assert.doesNotMatch(invoice.textContent, /indisponible|34 caractères|TROP LONGUE/);
+});
+
+test('double-escaped customer text remains literal without preventing a valid beneficiary form', () => {
+  const h = harness();
+  const escaped = transferXml.replace('Avenue de la Démonstration 34', 'Avenue d&amp;apos;Été 34');
+  h.registered[0].execute({ xml: escaped });
+  const invoice = h.doc.getElementById('invoice');
+  assert.ok(invoice.firstChild.textContent.includes('Avenue d&apos;Été 34'));
+  assert.ok(!invoice.firstChild.textContent.includes("Avenue d'Été 34"));
+  assert.equal(invoice.getElementsByTagName('svg').length, 1);
+});
+
+test('a separate payee retains its complete address in the invoice as well as in a suitable form', () => {
+  const h = harness();
+  const payee = '<cac:PayeeParty><cac:PartyName><cbc:Name>Payee fictif</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Rue du Payee 12</cbc:StreetName><cbc:PostalZone>0000</cbc:PostalZone><cbc:CityName>Autreville</cbc:CityName><cac:Country><cbc:IdentificationCode>BE</cbc:IdentificationCode></cac:Country></cac:PostalAddress></cac:PayeeParty>';
+  const withPayee = transferXml.replace('<cac:PaymentMeans>', payee + '<cac:PaymentMeans>');
+  h.registered[0].execute({ xml: withPayee });
+  let invoice = h.doc.getElementById('invoice');
+  assert.match(invoice.firstChild.textContent, /Bénéficiaire : Payee fictifRue du Payee 120000 AutrevilleBE/);
+  assert.match(invoice.lastChild.textContent, /PAYEE FICTIF.*RUE DU PAYEE 12.*BE 0000 AUTREVILLE/);
+  h.registered[0].execute({ xml: withPayee.replace('<cbc:PostalZone>0000</cbc:PostalZone><cbc:CityName>Autreville', '<cbc:CountrySubentity>Région fictive</cbc:CountrySubentity><cbc:PostalZone>0000</cbc:PostalZone><cbc:CityName>Autreville') });
+  invoice = h.doc.getElementById('invoice');
+  assert.equal(invoice.getElementsByTagName('svg').length, 0);
+  assert.match(invoice.textContent, /Bénéficiaire : Payee fictifRue du Payee 120000 AutrevilleRégion fictiveBE/);
+  assert.match(invoice.textContent, /sans zone prévue/);
 });
 
 test('app contract: XML tool updates visible invoice and invalid input preserves it', () => {

@@ -111,49 +111,23 @@ main { flex: 1; min-width: 0; width: 100%; }
 .invoice .number { width: 1%; overflow-wrap: normal; word-break: normal; }
 .invoice .number .line-detail { overflow-wrap: normal; word-break: normal; }
 .invoice .tax-label, .invoice .tax-rate { white-space: nowrap; overflow-wrap: normal; word-break: normal; hyphens: none; }
-/* Belgian SEPA visual cues; this responsive aid is not a bank-scannable form. */
-.transfer-section { --slip-red: #ef5848; --slip-label: #9b3024; margin-top: 36px; padding-top: 18px; border-top: 1px dashed #b8c4c5; break-inside: avoid; page-break-inside: avoid; }
-.transfer-header { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 0 4px 12px; }
-.transfer-purpose { color: var(--muted); font: 11px Arial, sans-serif; }
-.invoice .transfer-header h3 { color: #b73527; font: bold 16px Arial, sans-serif; letter-spacing: 0; margin: 0; text-transform: uppercase; }
-.transfer-slip { background: #fbd0c9; padding: 0 12px 14px; color: #171717; font: 14px/1.4 "Courier New", Courier, monospace; }
-.transfer-strip { background: #d64031; color: #fff; margin: 0 -12px 12px; padding: 4px 12px; font: bold 11px/1.5 Arial, sans-serif; }
-.transfer-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.transfer-label, .transfer-fields dt { color: var(--slip-label); font: 11px/1.4 Arial, sans-serif; }
-.transfer-label { display: block; margin-bottom: 3px; }
-.transfer-date { display: block; padding: 4px 0; font-size: 14px; }
-.transfer-amount { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; min-width: 0; }
-.transfer-amount > div { min-width: 0; }
-.transfer-amount .transfer-label { text-align: right; }
-.transfer-fields { margin: 0; display: grid; gap: 12px; }
-.transfer-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 12px; align-items: start; }
-.transfer-fields dt { padding-top: 4px; }
-.transfer-fields dd { margin: 0; min-width: 0; }
-.transfer-boxes { display: block; }
-.transfer-cells { display: flex; flex-wrap: wrap; gap: 2px; }
-.transfer-cell { display: inline-flex; align-items: center; justify-content: center; width: 1.05em; min-height: 1.7em; border: 1px solid var(--slip-red); background: #fffaf8; white-space: pre; }
-.transfer-long-value { background: #fffaf8; padding: 3px 5px; overflow-wrap: anywhere; }
-.transfer-beneficiary { display: grid; gap: 2px; background: #fffaf8; border-bottom: 1px solid var(--slip-red); padding: 5px 7px; text-transform: uppercase; }
-.transfer-name { font-weight: bold; }
-.transfer-reference { display: block; min-height: 32px; background: #fffaf8; border: 1px solid var(--slip-red); padding: 6px 8px; font-size: 16px; font-weight: bold; letter-spacing: .04em; white-space: pre-wrap; overflow-wrap: anywhere; }
-.transfer-help { margin: 7px 0 0; color: var(--muted); font: 10px/1.5 Arial, sans-serif; }
-@media screen and (max-width: 700px) {
-  .transfer-header { align-items: flex-start; flex-direction: column-reverse; gap: 5px; }
-  .transfer-row { grid-template-columns: 1fr; gap: 4px; }
-  .transfer-fields { gap: 14px; }
-  .transfer-top { flex-wrap: wrap; }
-  .transfer-amount { margin-left: auto; }
-  .transfer-reference { font-size: 15px; letter-spacing: 0; }
-}
+/* One fixed drawing, scaled uniformly on screen; physical dimensions at print. */
+.transfer-section { margin-top: 36px; padding-top: 18px; border-top: 1px dashed #b8c4c5; }
+.transfer-header { margin: 0 0 16px; }
+.invoice .transfer-header h3 { color: var(--ink); font-size: 14px; letter-spacing: 0; margin: 0 0 6px; }
+.transfer-header p { color: var(--muted); font-size: 12px; margin: 0; }
+.transfer-slip { display: block; width: 100%; height: auto; aspect-ratio: 210 / 101.6; overflow: visible; }
 @page {
   size: A4;
-  margin: 12mm 12mm 16mm;
+  margin: 12mm 0 16mm;
   @bottom-left {
+    padding-left: 12mm;
     content: "Peppol Viewer";
     font: 8pt Arial, sans-serif;
     color: #596b70;
   }
   @bottom-right {
+    padding-right: 12mm;
     content: "Page " counter(page) " / " counter(pages);
     font: 8pt Arial, sans-serif;
     color: #596b70;
@@ -167,7 +141,8 @@ main { flex: 1; min-width: 0; width: 100%; }
   .app-header, .app-footer, .welcome, .toolbar, .preview-note, .error, #status { display: none !important; }
   .preview { padding: 0; margin: 0; width: 100%; max-width: none; }
   .invoice { border: 0; box-shadow: none; width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.4; orphans: 3; widows: 3; }
-  .warnings { background: #fff; color: #000; border: 1px solid #777; font-size: 9pt; break-inside: avoid; margin: 0 0 4mm; padding: 2mm; }
+  .invoice-body { padding: 0 12mm; }
+  .warnings { background: #fff; color: #000; border: 1px solid #777; font-size: 9pt; break-inside: avoid; margin: 0 12mm 4mm; padding: 2mm; }
   .document-header { gap: 6mm; padding-bottom: 3mm; }
   .document-header > div, .parties > *, .summary > *, .payment-grid > * { min-width: 0; }
   .document-kind, .invoice h3 { font-size: 8pt; }
@@ -212,19 +187,11 @@ main { flex: 1; min-width: 0; width: 100%; }
   .details-section h3 + p { page-break-before: avoid; break-before: avoid-page; }
   .payment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5mm; }
   .payment-grid > div { page-break-inside: avoid; break-inside: avoid-page; }
-  .transfer-section { margin-top: 7mm; padding-top: 4mm; page-break-inside: avoid; break-inside: avoid-page; }
-  .transfer-header { padding-bottom: 3mm; }
-  .invoice .transfer-header h3 { font-size: 11pt; margin: 0; color: #b73527; }
-  .transfer-purpose { font-size: 8pt; }
-  .transfer-slip { font-size: 10pt; padding: 0 3mm 3mm; }
-  .transfer-strip { margin: 0 -3mm 3mm; padding: 1mm 3mm; font-size: 8pt; }
-  .transfer-top { margin-bottom: 3mm; }
-  .transfer-label, .transfer-fields dt { font-size: 7.5pt; }
-  .transfer-date { font-size: 10pt; }
-  .transfer-fields { gap: 2.5mm; }
-  .transfer-row { grid-template-columns: 31mm minmax(0, 1fr); gap: 3mm; }
-  .transfer-reference { font-size: 11pt; min-height: 8mm; padding: 1.5mm 2mm; }
-  .transfer-help { font-size: 7pt; margin-top: 2mm; }
+  .transfer-section { margin: 0; padding: 0; border: 0; page-break-before: always; break-before: page; page-break-inside: avoid; break-inside: avoid-page; }
+  .transfer-header { margin: 0 12mm 6mm; }
+  .invoice .transfer-header h3 { font-size: 11pt; margin: 0 0 2mm; }
+  .transfer-header p { font-size: 9pt; }
+  .transfer-slip { width: 210mm; height: 101.6mm; max-width: none; }
   .invoice, .invoice * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .app-footer a{color:inherit;text-underline-offset:3px}.app-footer a:hover{color:var(--accent)}.app-footer a:focus-visible{outline:3px solid #3c83b9;outline-offset:4px}

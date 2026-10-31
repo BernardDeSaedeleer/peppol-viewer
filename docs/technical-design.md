@@ -1,9 +1,12 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.5**, mise à jour le
-**30 octobre 2026**. Les tests et contrôles navigateur/PDF sont consignés en
-section 10, dont un PDF natif fourni par l’utilisateur. La dernière distribution
-publiée est la préversion **0.1.5**.
+État documenté : version applicative **0.1.6**, publiée comme préversion le
+**31 octobre 2026**. Les tests et contrôles
+de cette version sont consignés en section 10.4. Les résultats historiques,
+dont le PDF natif fourni pour la v0.1.5, restent limités aux versions examinées.
+La dernière distribution publiée est la préversion **0.1.6**. La publication ne
+vaut pas validation du PDF à taille réelle, de l’impression papier ou de la
+reconnaissance bancaire ; ces contrôles restent à réaliser.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -172,7 +175,9 @@ d’effacement sécurisé de la mémoire du navigateur.
 | `money(amount, fallback = '')` | `{ value, currency }`, devise de secours | Montant textuel ou `—` |
 | `date(raw)` | Date textuelle | `JJ/MM/AAAA`, texte original ou `—` |
 | `paymentReference(reference, account)` | Communication et compte textuels | `{ text, structured }` : texte à afficher et reconnaissance d’une communication structurée belge |
-| `transferDetails(data)` | Objet facture normalisé | Données du bulletin si le paiement est admissible, sinon absence de bulletin |
+| `transferDetails(data)` | Objet facture normalisé | Données du bulletin si le paiement est admissible, sinon `null` ; contrat conservé |
+| `febelfinDetails(data)` | Objet facture normalisé | Toujours un résultat : `{ transfer: null, reason }` pour une exclusion préalable, `{ transfer, reason }` en cas d’incompatibilité avec le gabarit, ou `{ transfer, fields, reason: '' }` |
+| `formCharacters(text)` | Chaîne de présentation | Liste de caractères affichés, regroupant chaque lettre latine avec ses accents combinants ; utilisée pour compter les cases et y placer le texte |
 | `MAX_BYTES` | Sans objet | `5 * 1024 * 1024`, soit 5 242 880 octets |
 
 Forme simplifiée du résultat, en notation de type documentaire :
@@ -279,6 +284,7 @@ Le fournisseur est lu sous `cac:AccountingSupplierParty/cac:Party`, le client so
 | `name` | `cac:PartyLegalEntity/cbc:RegistrationName` | Repli sur `cac:PartyName/cbc:Name` |
 | `trading` | `cac:PartyName/cbc:Name` | Affiché s’il diffère du nom principal |
 | `address` | `cac:PostalAddress` | Composition détaillée ci-dessous |
+| `postal` | `cac:PostalAddress` | Composants textuels séparés pour placer l’adresse dans le gabarit sans deviner sa structure |
 | `vat` | `cac:PartyTaxScheme/cbc:CompanyID` | Seulement les groupes dont `cac:TaxScheme/cbc:ID` vaut `VAT` |
 | `registration` | `cac:PartyLegalEntity/cbc:CompanyID` | Identifiant légal |
 | `endpoint` | `cbc:EndpointID` | Extrait mais non affiché ; `schemeID` non extrait |
@@ -289,9 +295,17 @@ code postal `PostalZone` et `CityName` sur une même ligne, `CountrySubentity`, 
 `Country/IdentificationCode`. Le code pays reste brut. Les chemins simples sont
 préfixés `cbc`, les groupes `cac`.
 
+Depuis la v0.1.6, `postal` conserve également les composants `street`,
+`additionalStreet`, `addressLines`, `postalCode`, `city`, `region` et `country`,
+issus respectivement des mêmes chemins. Ces valeurs restent celles extraites
+du XML. La liste `address`, utilisée pour l’aperçu général, n’est pas remplacée
+par les formes en majuscules destinées au bulletin.
+
 Le bloc paiement standard affiche le nom du bénéficiaire ou, à défaut, son
-identifiant légal. Le bulletin complémentaire utilise la priorité décrite en
-section 6.5 pour choisir son bénéficiaire et l’adresse qui lui correspond.
+identifiant légal, ainsi que les lignes de son adresse. Ces informations restent
+visibles même si le gabarit ne peut pas recevoir l’adresse. Le bulletin
+complémentaire utilise la priorité décrite en section 6.5 pour choisir son
+bénéficiaire et l’adresse qui lui correspond.
 
 ### 5.3 Lignes
 
@@ -469,8 +483,11 @@ aucune écriture dans le XML d’origine.
 
 ### 6.5 Bulletin d’aide au paiement
 
-`transferDetails(data)` centralise l’admissibilité du bulletin ajouté à la fin
-de la facture. Toutes les conditions suivantes doivent être réunies :
+L’admissibilité du bulletin ajouté à la fin de la facture est évaluée dans une
+fonction interne commune qui fournit les données du virement ou une raison
+d’exclusion. `transferDetails(data)` conserve son contrat public historique :
+un objet si le paiement est admissible, `null` sinon. Toutes les conditions
+suivantes doivent être réunies :
 
 | Condition | Règle |
 | --- | --- |
@@ -489,6 +506,15 @@ un même compte empêchent l’affichage du bulletin. Un `CardAccount` présent 
 un code de virement reste exclu. Le bloc paiement général reste disponible. Le cas du code `1` repose
 sur le contexte belge complet : ce code seul n’est pas assimilé à un virement.
 
+`febelfinDetails(data)` reprend aussi la raison des exclusions préalables. Pour
+un document déjà lu, elle renvoie toujours un objet de résultat ; une exclusion
+du type de document, de la devise, des moyens de paiement, de l’IBAN, du montant
+ou du bénéficiaire produit `{ transfer: null, reason }`. L’interface affiche
+« Bulletin de virement indisponible » et la première raison rencontrée. Elle
+n’affiche pas une liste cumulative de motifs et ne transforme pas cette
+indisponibilité en erreur de lecture XML. Une note de crédit, une facture en
+USD ou un paiement en espèces reste consultable normalement.
+
 Le nom du bénéficiaire provient en priorité de `PayeeParty`, puis du titulaire
 du compte (`PayeeFinancialAccount/Name`), puis du fournisseur. L’adresse doit
 appartenir à la partie retenue ; l’adresse du fournisseur n’est pas reprise
@@ -496,14 +522,118 @@ lorsque le titulaire du compte est différent. Une adresse absente n’est pas i
 Le montant est celui qui reste à payer dans le XML, jamais le total TTC avant
 acompte. Le bulletin ne corrige aucune donnée financière.
 
-La présentation reprend certains repères visuels du bulletin belge : fond
-saumon, repères rouges et données en police monospace. Elle est produite avec le
-HTML/CSS local, sans image distante, police téléchargée ni dépendance ajoutée.
-Les dimensions s’adaptent au contenu et à l’espace disponible. Le bulletin est
-donc une **aide à la saisie du paiement, pas un formulaire bancaire homologué**.
-Les [directives d’impression Febelfin](https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf)
-décrivent des contraintes physiques précises pour les formulaires bancaires ;
-l’application ne revendique pas leur respect intégral.
+#### Contraintes du gabarit
+
+Pour un paiement admissible, `febelfinDetails(data)` vérifie ensuite les
+contraintes du gabarit. Cette fonction ne modifie ni
+le modèle reçu, ni les résultats de `transferDetails`, ni le fichier XML. Elle
+prépare un objet `fields` réservé à la présentation, ou une raison expliquant
+pourquoi le bulletin ne peut pas être produit sans perte d’information.
+
+| Champ | Règle de présentation |
+| --- | --- |
+| `beneficiary` | Nom en majuscules, 26 caractères affichés au maximum, accents conservés |
+| `street` | Rue, complément et lignes d’adresse joints par une espace, 26 caractères affichés au maximum |
+| `locality` | Pays, code postal et ville joints par une espace, 26 caractères affichés au maximum |
+| `account` | IBAN contrôlé ; caractères placés dans les cases sans espaces de séparation |
+| `bank` | BIC absent ou conforme à la forme de 8 ou 11 caractères, en majuscules ; aucun BIC n’est inventé |
+| `reference` | Communication structurée valide au format `+++ddd/dddd/ddddd+++`, ou communication libre en majuscules de 34 caractères au maximum |
+| `euros`, `cents` | Huit chiffres euros au maximum, alignés à droite, et exactement deux centimes ; valeur maximale représentable `99999999.99` |
+| `code` | `03` pour une communication structurée, `02` pour une communication libre ou absente |
+
+Les noms et adresses acceptent les lettres latines et leurs accents, les chiffres
+et la ponctuation usuelle admise par le lecteur. Les caractères de contrôle,
+les alphabets non latins et les séquences ressemblant à une entité non décodée
+empêchent la génération du bulletin. La communication libre se limite aux lettres
+`A` à `Z`, aux chiffres, aux espaces et aux signes `+`, `-`, `/`, `=`. La lettre
+`X` appartient à l’alphabet autorisé. Ces contrôles portent sur la présentation
+en majuscules ; une conversion de casse qui augmente la longueur reste soumise
+à la même capacité.
+
+Le comptage et le placement utilisent tous deux `formCharacters(text)` après
+la mise en majuscules de la copie de présentation. Cette fonction regroupe une
+lettre latine et ses accents combinants dans le même caractère affiché. Ainsi,
+`É` précomposé et `E` suivi de l’accent combinant U+0301 consomment chacun une
+case. Un nom, une rue ou une localité de 26 caractères affichés est admis en NFC
+comme en NFD ; 27 sont refusés. Les espaces conservent leur case. Ce découpage
+n’applique aucune normalisation Unicode au texte : le XML et le modèle gardent
+exactement leur représentation initiale.
+
+Une région postale ne possède pas de zone distincte dans ce gabarit : sa présence
+empêche le bulletin plutôt que de la supprimer. Si une adresse existe sans ses
+composants `postal`, elle n’est pas réinterprétée à partir de lignes libres.
+Une adresse absente reste vierge. L’adresse d’un fournisseur n’est jamais prêtée
+à un autre titulaire de compte.
+
+Lorsqu’un champ ne tient pas ou ne respecte pas ces règles, l’interface affiche
+la raison et conserve l’aperçu de facture et ses informations de paiement.
+Elle n’utilise ni troncature, ni abréviation, ni réduction de taille des caractères.
+Le décodage XML normal reste unique : `&amp;apos;` devient le texte littéral
+`&apos;`, qui n’est pas transformé ensuite en apostrophe. Ce comportement préserve
+les erreurs éventuelles de l’émetteur au lieu de les corriger silencieusement.
+
+#### Géométrie, typographie et origine
+
+Le bulletin est un SVG local inséré dans le DOM, avec un repère de
+**210 × 101,6 unités**, correspondant à **210 × 101,6 mm à l’impression**.
+Son décor est reconstruit à partir du modèle du guide public Febelfin. Le choix
+de suivre les cases est autorisé au § 2.1, page 4 du guide ; ce choix renvoie
+aux règles de remplissage manuel du § 3, page 7. Chaque caractère occupe donc
+une case, y compris dans l’IBAN et la communication.
+
+Le décor et les données utilisent une même grille géométrique. Pour chaque
+case, le texte est placé à son centre horizontal et vertical avec
+`text-anchor="middle"` et `dominant-baseline="central"`. Un caractère accentué
+et ses éventuels signes combinants forment un seul graphème, conservé dans une
+même case. Les espaces des champs textuels réservent leur position sans encre.
+
+| Zone | Répartition dans la grille |
+| --- | --- |
+| Montant EUR | Huit cases ; chiffres alignés à droite, cases initiales inutilisées vides |
+| Montant CENT | Deux cases toujours remplies, y compris `00` |
+| IBAN bénéficiaire | 34 cases ; caractères depuis la première, sans espaces entre les groupes ; le décor conserve les repères de groupement |
+| BIC bénéficiaire | Onze cases ; huit ou onze caractères depuis la première, ou zone vide si le BIC est absent |
+| Nom, rue et localité bénéficiaire | 26 cases par ligne ; un graphème par case, espaces inclus comme cases vides |
+| Communication | 34 cases ; texte depuis la première case, avec chaque `+`, `/` ou espace à sa place |
+| Code `02` / `03` | Deux cases ; un chiffre centré dans chacune |
+
+Les données sont noires, en police système monospace `Courier New` avec des
+replis locaux, en majuscules et sans italique, à 4,6 mm de corps (environ
+13,04 points). Le code `02` / `03` utilise un corps fixe de 4,4 mm pour ses
+cases plus étroites. Ces tailles sont fixes : elles ne sont pas ajustées à la
+longueur du texte. La position vient de chaque case et le rendu des glyphes
+dépend aussi des polices disponibles. Le XML et le modèle ne sont pas modifiés
+par cette répartition visuelle.
+
+Le repère `T` est un tracé vectoriel OCR-B à 10 points, intégré directement dans
+le SVG pour éviter une dépendance aux polices installées. Il conserve son
+positionnement à 205,8 mm du bord gauche, avec son pied à 45,2 mm du bord
+supérieur, soit 56,4 mm du bord inférieur. Le contour provient
+de `ocrb10.sfd` du paquet [OCR-B Outline sur CTAN](https://ctan.org/tex-archive/fonts/ocr-b-outline),
+de Z. Wagner d’après les fontes METAFONT de Norbert Schwarz. Le README de ce
+paquet autorise l’utilisation, la modification et la distribution sans
+limitation. Seul le contour nécessaire est inclus ; aucune fonte complète
+n’est chargée ni téléchargée à l’exécution.
+
+Le fond saumon, les traits et les mentions rouges approchent à l’écran le
+PMS OCR Warm Red et son fond à 20 % : rouge `#ff3617`, fond `#ffd7d1` et cases
+teintées `#ffebe8`. Ces valeurs résultent d’une conversion RVB simple des
+proportions CMJN. La représentation RVB d’un navigateur n’est
+pas une garantie colorimétrique d’impression. Le guide autorise une quadrichromie
+à 79 % de magenta et 91 % de jaune ; les propriétés physiques du papier, la
+trame et les encres ne sont pas pilotées par l’application.
+
+La date d’exécution, les coordonnées du donneur d’ordre et les signatures sont
+laissées vides. La date limite de paiement de la facture ne devient pas une
+instruction bancaire d’exécution ; elle reste affichée hors du formulaire.
+
+Sources : [guide Febelfin, version 1.3](https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf)
+et [page des fichiers techniques d’impression](https://febelfin.be/fr/themes/numerisation-et-innovation/regelgeving-voorwaarden/fichiers-techniques-d-impression).
+Les fichiers maîtres s’obtiennent sur demande à Febelfin ; le catalogue public
+contient des spécimens. Le décor reconstruit n’est donc pas présenté comme un
+fichier maître officiel ni comme un formulaire bancaire homologué. Aucun ordre
+de paiement n’est transmis. La reconnaissance par les applications bancaires
+reste à vérifier par des essais réels, sans exécuter de paiement de test.
 
 ## 7. Sécurité et confidentialité
 
@@ -585,8 +715,12 @@ d’accessibilité ni une vérification avec lecteur d’écran.
 Le bouton « Imprimer / PDF » appelle uniquement `window.print()`. L’utilisateur
 choisit son imprimante ou l’enregistrement PDF dans la boîte de dialogue.
 
-Les règles CSS demandent du papier A4 avec marges de 12 mm en haut et sur les côtés,
-et 16 mm en bas pour la numérotation. Elles retirent la barre
+Les règles CSS demandent du papier A4 avec une marge de 12 mm en haut et de
+16 mm en bas pour la numérotation. Les marges horizontales de `@page` sont nulles
+depuis la v0.1.6 : le conteneur du contenu de facture ajoute 12 mm à gauche et à
+droite, ce qui conserve ses **186 mm de largeur utile** tout en laissant au
+bulletin sa largeur complète de 210 mm. Les pieds de page restent décalés de
+12 mm des bords latéraux. Les règles retirent la barre
 d’actions, l’accueil, les décorations et les messages d’erreur, conservent les
 avertissements, réactivent l’affichage complet du tableau et demandent la répétition
 de ses en-têtes. Les lignes et les totaux utilisent `break-inside: avoid-page`,
@@ -596,13 +730,25 @@ Les titres restent associés au contenu suivant ; les notes longues utilisent
 `orphans` et `widows` plutôt qu’une interdiction de coupure de tout le paragraphe.
 
 Le bulletin d’aide au paiement est placé après les autres sections de la facture.
-Ses règles d’impression demandent de garder le bloc entier sur une même page et
-de le reporter sur la suivante si nécessaire. Sa largeur s’adapte à la page A4 ;
-la présentation mobile ne fixe pas les dimensions d’un formulaire bancaire.
-Les contrôles à l’écran et en largeur mobile de ce bloc ont été réalisés sur
-l’exemple 07 ; leurs résultats figurent en section 10.3. Un PDF natif fourni pour
-la v0.1.5 confirme le bulletin entier en page 3 après deux pages de facture.
-Les observations historiques ci-dessous concernent la v0.1.2.
+La v0.1.6 impose un saut de page avant ce bloc et demande de le garder entier.
+Le SVG imprimé mesure 210 × 101,6 mm, sans repli mobile des champs ni réduction
+automatique par les styles. À l’écran, il est réduit proportionnellement à
+l’espace disponible. Les deux paragraphes de consignes et de référence sous le
+bulletin sont absents du DOM, à l’écran comme à l’impression. Les instructions
+restent dans la documentation et le mode d’emploi : imprimer à **100 % / Taille
+réelle**, en A4 portrait, couleur et recto uniquement. Le
+réglage « Ajuster à la page » modifierait les dimensions attendues ; les marges
+matérielles d’une imprimante peuvent également rogner les bords. Le décor
+commence à environ 2,17 mm du bord latéral ; une imprimante non bord à bord
+peut donc le couper. Réduire le formulaire pour compenser ce rognage ferait
+perdre les dimensions prescrites.
+
+Les réglages de la boîte de dialogue restent sous le contrôle de l’utilisateur.
+Un PDF ou un exemplaire papier doit être mesuré pour confirmer la taille réelle
+sur une combinaison de navigateur et d’imprimante donnée. Les contrôles de la
+v0.1.6 figurent en section 10.4. Le PDF historique de la v0.1.5, décrit en
+section 10.3, ne valide pas la géométrie du nouveau gabarit. Les observations
+historiques ci-dessous concernent la v0.1.2.
 
 Les zones `@bottom-left` et `@bottom-right` ajoutent le nom de l’application et
 « Page x / y ». Leur prise en charge est documentée pour
@@ -685,9 +831,10 @@ les reprises depuis le cache de navigation.
 
 ### 10.1 Suite automatisée
 
-Le 30 octobre 2026, les **37 tests sur 37 passent : 14 pour le lecteur XML,
-11 pour le paiement, 10 pour l’application et 2 pour la synchronisation des versions**.
-Elle s’exécute avec le lanceur natif `node:test`. Les commandes reproductibles se
+La suite s’exécute avec le lanceur natif `node:test`. Les résultats de la
+v0.1.6 figurent en section 10.4. Le résultat historique du 30 octobre 2026 était de
+**37 tests passants** pour la v0.1.5 : 14 pour le lecteur XML, 11 pour le paiement,
+10 pour l’application et 2 pour la synchronisation des versions. Les commandes reproductibles se
 trouvent dans la section exploitation.
 
 | Groupe | Couverture présente |
@@ -703,6 +850,7 @@ trouvent dans la section exploitation.
 | Communications belges | Clé modulo 97, clé `97`, zéros initiaux, séparateurs usuels, références libres ou invalides conservées |
 | Bulletin | Codes admis, contexte belge du code `1` ou absent, montant exact, priorité du bénéficiaire et de son adresse |
 | Exclusions du bulletin | Avoirs, devises, montants non admissibles, IBAN invalide, mandats même vides, cartes même avec code de virement, groupes de comptes ou identifiants bancaires multiples |
+| Gabarit Febelfin | Limites 26/27 caractères, 34/35 caractères, huit chiffres euros, BIC, caractères incompatibles, composants d’adresse et absence de mutation d’un modèle gelé |
 | Entrées refusées | Vide, XML mal formé, format inconnu, profil différent, DTD, dépassement de taille |
 | Encodages | UTF-8, UTF-16 LE, ISO-8859-1 déclaré et octets invalides |
 | Données incomplètes | Total payable absent et bloc de totaux absent |
@@ -740,6 +888,11 @@ navigateur, le document utilisé et le résultat obtenu :
 7. Étendre le contrôle WebMCP natif à d’autres navigateurs compatibles et aux
    reprises depuis le cache de navigation.
 8. Charge près des limites de taille/lignes et XML fortement imbriqué.
+9. Pour la v0.1.6, taille physique 210 × 101,6 mm du bulletin à 100 %, positions
+   des données, couleurs et absence de rognage avec les imprimantes visées.
+10. Reconnaissance du bulletin dans les applications bancaires visées, en
+    comparant montant, bénéficiaire, IBAN et communication au XML sans valider
+    de paiement. Consigner application, version, appareil et résultat.
 
 La suite ne couvre pas exhaustivement les encodages, la limite exacte de 2 000
 lignes, les courses asynchrones ou chaque branche d’erreur. Un build réussi ou les
@@ -781,6 +934,44 @@ valeurs, pas sur une authentification du bénéficiaire ou des coordonnées banc
 Ni son XML, ni un PDF ou une capture contenant ses données ne sont ajoutés au
 dépôt, à une distribution ou à une publication. Les tests partagés utilisent des
 données fictives ou des exemples publics.
+
+### 10.4 Vérifications de la v0.1.6
+
+La v0.1.6 a été préparée à partir de la dernière version GitHub alors publiée,
+la v0.1.5, et conserve
+les contrôles antérieurs comme historique. Les résultats ci-dessous concernent
+le nouveau gabarit ; aucune compatibilité bancaire n’est déduite du seul respect
+des dimensions CSS ou du passage des tests Node.
+
+Contrôles du **31 octobre 2026**, après le centrage de tous les champs dans leurs
+cases, la suppression des deux paragraphes sous le bulletin et les compléments
+sur les raisons d’exclusion et le comptage commun des caractères accentués :
+
+| Contrôle | Résultat et portée |
+| --- | --- |
+| Tests automatisés | **57 tests sur 57 passent** : 14 lecteur XML, 21 paiement, 20 application et 2 construction/version |
+| Construction | Build réussi après les derniers compléments ; contrôle `git diff --check` sans erreur |
+| Conservation des valeurs | Tests ajoutés sur un modèle gelé, les accents, les entités littérales, les limites de champs et l’association du bénéficiaire à sa propre adresse |
+| Centrage par case | Position de chaque graphème comparée au centre du rectangle correspondant ; débuts des rangées, alignement du montant à droite, nom de 26 caractères, communication de 34 caractères, code `02` et IBAN étranger de 22 caractères vérifiés |
+| Accents décomposés | Une lettre et son accent combinant en NFD restent dans la même case, sans modification de la source |
+| Exclusions et limites dans le navigateur | **16 scénarios supplémentaires sur 16 réussissent** : messages d’exclusion présents, valeurs intégrales conservées, nom admis à 26 caractères affichés et refusé à 27 en NFC/NFD, adresse de 26 caractères en NFD, cellules exactes, absence d’erreur et de débordement horizontal |
+| Remplacement du document | Le motif d’indisponibilité disparaît au retour à une facture admissible |
+| Écran sur ordinateur | Exemple `07-bulletin-virement.xml` réouvert et inspecté avec le centrage par case ; aucun paragraphe de commentaire sous le bulletin |
+| Largeur mobile | Même exemple réinspecté à 390 × 844 pixels ; `clientWidth = scrollWidth = 375` pixels, proportions conservées sans débordement horizontal ; aucun paragraphe de commentaire sous le bulletin |
+| XML privé | Contrôle local d’un document de 16 lignes : gabarit admissible, fichier et modèle comparés inchangés ; les textes littéraux `&apos;` restent tels quels ; aucune donnée de facture partagée |
+| PDF natif et taille réelle | La commande Imprimer / PDF du navigateur intégré n’a pas produit de PDF exploitable. Dimensions 210 × 101,6 mm, positions et absence de coupure restent à vérifier sur une sortie native de la v0.1.6 |
+| Impression papier | À vérifier à 100 % avec mesure physique, couleurs et recto uniquement |
+| Reconnaissance bancaire | Non testée ; aucun paiement exécuté |
+
+Les contrôles écran ne valident pas la taille physique sur papier. Le PDF natif,
+l’impression à 100 % et le scan bancaire restent les vérifications nécessaires
+avant d’annoncer ces usages comme validés. L’absence de résultat exploitable dans
+le navigateur intégré ne démontre pas un échec de l’impression dans les autres
+navigateurs.
+
+Les fichiers de facture privés restent locaux. Les exemples, captures et
+éventuels documents partagés doivent utiliser uniquement des données fictives
+ou les spécimens publics déjà documentés.
 
 ## 11. Exploitation, construction et publication
 
@@ -902,6 +1093,7 @@ ne démontre pas la prise en charge du nouveau format.
 | `ChargeIndicator` interprété comme remise sauf `true`/`1` | Une valeur manquante ou incorrecte n’est pas signalée spécifiquement |
 | Traitement synchrone après lecture du fichier | Une entrée volumineuse peut bloquer temporairement l’interface |
 | CSS d’impression sans moteur de pagination dédié | Le PDF peut varier selon le navigateur |
+| Gabarit reconstruit et couleurs RVB | Pas de fichier maître ni d’homologation Febelfin ; lecture bancaire et impression matérielle à vérifier |
 | Documentation et tests non inclus dans `dist/` | Consultation technique via le dépôt, pas par une URL de l’application |
 
 La priorité de maintenance est la justesse de l’extraction et la lisibilité sur
@@ -916,6 +1108,8 @@ correctifs déjà implémentés ni des évolutions automatiquement engagées.
 - [Syntaxe UBL CreditNote](https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-creditnote/).
 - [Febelfin — Conditions pour proposer des virements](https://febelfin.be/fr/themes/numerisation-et-innovation/regelgeving-voorwaarden/conditions-pour-proposer-des-virements).
 - [Febelfin — Directives pour la personnalisation et l’impression d’un formulaire pour un ordre de virement européen, version 1.3](https://febelfin.be/media/pages/publicaties/2021/het-formulier-voor-een-europese-overschrijvingsopdracht/2262359393-1731507689/copy-formulaire-pour-un-ordre-de-virement-europeen.pdf).
+- [Febelfin — Fichiers techniques d’impression](https://febelfin.be/fr/themes/numerisation-et-innovation/regelgeving-voorwaarden/fichiers-techniques-d-impression).
+- [CTAN — OCR-B Outline, source du repère d’alignement vectoriel](https://ctan.org/tex-archive/fonts/ocr-b-outline).
 - [Provenance des fixtures conservées dans le dépôt](../tests/fixtures/README.md).
 - [DOMParser — documentation MDN](https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString).
 

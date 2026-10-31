@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const { parseInvoice, money, decimal, date, decodeXml, paymentReference, transferDetails, MAX_BYTES } = globalThis.Peppol;
+  const { parseInvoice, money, decimal, date, decodeXml, paymentReference, febelfinDetails, formCharacters, MAX_BYTES } = globalThis.Peppol;
   const $ = id => document.getElementById(id);
   const homeTitle = document.title;
   let loadSequence = 0;
@@ -15,39 +15,101 @@
   }
   function append(parent, ...children) { parent.append(...children.filter(Boolean)); return parent; }
   function meta(label, val) { return append(el('div'), el('span', 'meta-label', label), el('span', 'meta-value', val || '—')); }
-  function transferBoxes(value, minimum = 0) {
-    const box = el('span', 'transfer-boxes');
-    // Screen readers get the complete value, not a sequence of isolated characters.
-    box.append(el('span', 'sr-only', value));
-    const cells = el('span', 'transfer-cells');
-    cells.setAttribute('aria-hidden', 'true');
-    if (value.length > 42) cells.append(el('span', 'transfer-long-value', value));
-    else [...value.padStart(minimum, ' ')].forEach(char => cells.append(el('span', 'transfer-cell', char)));
-    box.append(cells);
-    return box;
+  function svgNode(tag, attributes = {}, text) {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, String(value));
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function transferForm(fields) {
+    // All coordinates are millimetres. Box filling: Febelfin v1.3, pp. 4 and 7.
+    // The decoration reconstructs the public specimen; it is not the print master.
+    const svg = svgNode('svg', { class: 'transfer-slip', viewBox: '0 0 210 101.6', width: '210mm', height: '101.6mm', role: 'img', 'aria-labelledby': 'transfer-title transfer-description' });
+    svg.append(svgNode('title', { id: 'transfer-title' }, 'Bulletin de virement'),
+      svgNode('desc', { id: 'transfer-description' }, `${fields.euros},${fields.cents} EUR — ${fields.beneficiary} — ${fields.street} — ${fields.locality} — IBAN ${fields.account}${fields.bank ? ' — BIC ' + fields.bank : ''} — Communication ${fields.reference || 'non renseignée'}`));
+    const red = '#ff3617', tint = '#ffd7d1', light = '#ffebe8';
+    // Decoration and text share the same grid, including vertical centring.
+    const row = (x, y, count, height = 5.63, options = {}) => ({ x, y, count, height, width: 4.04, pitch: 5.08, white: count, separators: [], ...options });
+    const groups = [4, 8, 12, 16, 20, 24, 28, 32];
+    const grids = {
+      executionDate: row(4.04, 24.10, 6, 5.63, { separators: [2, 4] }),
+      euros: row(151.36, 24.10, 8, 5.63, { separators: [2, 5] }),
+      cents: row(197.00, 24.10, 2),
+      payerAccount: row(34.52, 32.47, 34, 5.92, { white: 16, separators: groups }),
+      account: row(34.52, 58.02, 34, 5.63, { white: 16, separators: groups }),
+      bank: row(34.52, 66.39, 11, 5.77, { white: 8 }),
+      reference: row(34.52, 91.79, 34),
+      beneficiary: row(34.52, 75.62, 26, 4.04, { outline: false }),
+      street: row(34.52, 79.95, 26, 4.04, { outline: false }),
+      locality: row(34.52, 84.14, 26, 4.04, { outline: false }),
+      code: row(197.72, 7.22, 2, 5.77, { width: 2.54, pitch: 2.54 }),
+    };
+    const artwork = svgNode('g', { 'aria-hidden': 'true' });
+    const rect = (x, y, width, height, fill = '#fff') => artwork.append(svgNode('rect', { x, y, width, height, fill }));
+    const path = d => artwork.append(svgNode('path', { d, fill: 'none', stroke: red, 'stroke-width': .14 }));
+    const label = (x, y, text, size = 2.16, extra = {}) => artwork.append(svgNode('text', { x, y, fill: red, 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': size, ...extra }, text));
+    rect(0, 0, 210, 101.6);
+    rect(2.17, 15.59, 206.10, 83.85, tint);
+    rect(2.17, 15.59, 206.10, 5.48, red);
+    path('M111.21 2.16H140.24V15.59');
+    label(92.87, 3.32, 'Signature(s)');
+    label(206.2, 5.05, 'ORDRE DE VIREMENT', 3.46, { 'font-weight': 'bold', 'text-anchor': 'end' });
+    label(4.04, 19.05, 'Si complété à la main, n’indiquer qu’une seule MAJUSCULE ou un seul chiffre noir (ou bleu) par case', 2.88, { fill: '#fff', 'font-weight': 'bold', 'font-style': 'italic' });
+    const boxes = ({ x, y, count, height, width, pitch, white, separators, outline = true }) => {
+      for (let i = 0; i < count; i++) {
+        const left = x + i * pitch, right = left + width, bottom = y + height;
+        rect(left, y, width, height, i < white ? '#fff' : light);
+        if (outline) path(`M${left} ${y + height / 3}V${y}H${right}V${y + height / 3}M${left} ${bottom - height / 3}V${bottom}H${right}V${bottom - height / 3}`);
+        if (separators.includes(i + 1)) rect(right, bottom - 1.2, pitch - width, 1.2, red);
+      }
+    };
+    Object.values(grids).forEach(boxes);
+    for (const y of [41.71, 46.04, 50.37]) boxes(row(34.52, y, 26, 4.04, { outline: false }));
+    label(4.04, 23.09, 'Date d’exécution souhaitée dans le futur');
+    label(151.36, 23.09, 'Montant');
+    label(185.01, 23.52, 'EUR', 2.88, { 'font-weight': 'bold' });
+    label(198.45, 23.52, 'CENT', 2.88, { 'font-weight': 'bold' });
+    label(193.54, 29.73, ',', 5.2, { 'font-weight': 'bold' });
+    label(4.19, 36.08, 'Compte donneur d’ordre (IBAN)');
+    label(4.19, 44.59, 'Nom et adresse donneur d’ordre');
+    label(4.19, 61.34, 'Compte bénéficiaire (IBAN)');
+    label(4.19, 69.42, 'BIC bénéficiaire');
+    label(4.19, 78.36, 'Nom et adresse bénéficiaire');
+    label(4.19, 94.96, 'Communication');
+    // Exact OCR-B 10 pt T outline, Schwarz / Wagner (CTAN), freely redistributable.
+    // Source and license: docs/technical-design.md, section 6.5.
+    artwork.append(svgNode('path', { fill: '#000', transform: 'translate(205.8 45.2) scale(0.003527777778 -0.003527777778)', d: 'M151 698C159 699 560 700 570 698C583 696 595 687 602 676C621 646 604 606 570 600C566 599 537 599 487 599L411 599L411 317C411 9 411 30 405 17C402 10 391 -1 384 -4C369 -12 353 -12 338 -4C331 -1 320 10 317 17C311 30 311 9 311 317L311 599L235 599C152 599 151 599 140 604C113 618 104 652 121 677C128 687 139 695 151 698Z' }));
+    const ink = svgNode('g', { 'aria-hidden': 'true', fill: '#000', 'font-family': '"Courier New", Courier, monospace', 'font-size': 4.6, 'font-weight': 'normal', 'font-style': 'normal', 'letter-spacing': 0 });
+    const dataText = (field, value) => {
+      const grid = grids[field];
+      // Keep a letter and its combining accents in one cell without normalising
+      // the value. Spaces in names/references reserve an empty cell.
+      const characters = formCharacters(value);
+      const offset = field === 'euros' ? grid.count - characters.length : 0;
+      characters.forEach((character, i) => ink.append(svgNode('text', {
+        x: grid.x + grid.width / 2 + (offset + i) * grid.pitch,
+        y: grid.y + grid.height / 2,
+        'data-field': field, 'xml:space': 'preserve', 'text-anchor': 'middle', 'dominant-baseline': 'central',
+        ...(field === 'code' ? { 'font-size': 4.4 } : {}),
+      }, character)));
+    };
+    for (const field of ['euros', 'cents', 'account', 'bank', 'beneficiary', 'street', 'locality', 'reference', 'code']) {
+      // In box-filling mode the IBAN has one character per cell, without the
+      // presentation-only grouping spaces. The accessible description keeps them.
+      dataText(field, field === 'account' ? fields.account.replace(/ /g, '') : fields[field]);
+    }
+    svg.append(artwork, ink);
+    return svg;
   }
   function renderTransfer(data) {
-    const transfer = transferDetails(data);
-    if (!transfer) return null;
+    const result = febelfinDetails(data);
+    if (result.reason) return append(el('section', 'details-section transfer-unavailable'), el('h3', '', 'Bulletin de virement indisponible'), el('p', '', result.reason + ' Les données de la facture restent affichées intégralement.'));
+    const { transfer, fields } = result;
     const section = el('section', 'transfer-section');
     section.setAttribute('aria-label', 'Bulletin de virement');
-    const header = append(el('div', 'transfer-header'), el('span', 'transfer-purpose', 'Aide au paiement'), el('h3', '', 'Bulletin de virement'));
-    const slip = el('div', 'transfer-slip');
-    slip.append(el('p', 'transfer-strip', 'Virement en euros'));
-    const amount = append(el('div', 'transfer-amount'),
-      append(el('div'), el('span', 'transfer-label', 'Montant · EUR'), transferBoxes(transfer.euros, 8)),
-      append(el('div'), el('span', 'transfer-label', 'CENT'), transferBoxes(transfer.cents)));
-    slip.append(append(el('div', 'transfer-top'),
-      transfer.dueDate ? append(el('div', 'transfer-due'), el('span', 'transfer-label', 'Échéance de la facture'), el('span', 'transfer-date', date(transfer.dueDate))) : el('div'), amount));
-    const fields = el('dl', 'transfer-fields');
-    const field = (label, content, className = '') => fields.append(append(el('div', 'transfer-row ' + className), el('dt', '', label), append(el('dd'), content)));
-    field('Compte bénéficiaire (IBAN)', transferBoxes(transfer.account.replace(/ /g, '')));
-    if (transfer.bank) field('BIC bénéficiaire', transferBoxes(transfer.bank));
-    field('Nom et adresse du bénéficiaire', append(el('div', 'transfer-beneficiary'), el('span', 'transfer-name', transfer.beneficiary), ...transfer.address.map(line => el('span', '', line))));
-    field(transfer.reference.structured ? 'Communication structurée' : 'Communication',
-      el('span', 'transfer-reference', transfer.reference.text || 'Non renseignée dans le XML'), 'transfer-reference-row');
-    slip.append(fields);
-    section.append(header, slip, el('p', 'transfer-help', 'Aide à la saisie dans votre banque · Données reprises du XML · Formulaire non homologué.'));
+    const header = append(el('div', 'transfer-header'), el('h3', '', 'Bulletin de virement'),
+      el('p', '', `Facture ${data.id}${transfer.dueDate ? ' · Échéance : ' + date(transfer.dueDate) : ''}`));
+    section.append(header, transferForm(fields));
     return section;
   }
   function partyBlock(p, label) {
@@ -61,7 +123,7 @@
   }
   function renderInvoice(data) {
     const m = a => money(a, data.currency);
-    const fragment = document.createDocumentFragment();
+    const fragment = el('div', 'invoice-body');
     const label = data.credit ? 'Note de crédit' : 'Facture';
     const heading = append(el('div'), el('span', 'document-kind', `${label} · ${data.currency || 'Devise absente'}`), el('h2', '', data.id));
     const dates = append(el('div', 'document-dates'), meta('Date d’émission', date(data.issueDate)), data.dueDate ? meta('Échéance', date(data.dueDate)) : null);
@@ -127,7 +189,7 @@
         grid.append(block);
       });
       payment.append(grid);
-      if (data.payee) payment.append(el('p', '', `Bénéficiaire : ${data.payee.name || data.payee.registration || '—'}`));
+      if (data.payee) payment.append(el('p', '', `Bénéficiaire : ${data.payee.name || data.payee.registration || '—'}`), ...data.payee.address.map(line => el('p', '', line)));
       data.terms.forEach(t => payment.append(el('p', '', t)));
       fragment.append(payment);
     }
@@ -143,8 +205,14 @@
     }
     if (data.notes.length) fragment.append(append(el('section', 'details-section'), el('h3', '', 'Notes'), ...data.notes.map(t => el('p', '', t))));
     const transfer = renderTransfer(data);
-    if (transfer) fragment.append(transfer);
-    return fragment;
+    // Full-width sibling: the invoice keeps its own 12 mm print inset while the
+    // form uses the entire 210 mm page width, without negative margins or scaling.
+    const result = append(document.createDocumentFragment(), fragment);
+    if (transfer) {
+      if (transfer.className === 'transfer-section') result.append(transfer);
+      else fragment.append(transfer);
+    }
+    return result;
   }
   function showXml(xml, filename) {
     const data = parseInvoice(xml);
