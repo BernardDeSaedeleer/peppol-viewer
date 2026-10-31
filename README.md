@@ -82,11 +82,13 @@ navigateurs compatibles. Les lignes d’un tableau large défilent horizontaleme
 
 ## Exemples de démonstration
 
-Le dossier [`exemples`](exemples/README.md) contient sept documents de démonstration
+Le dossier [`exemples`](exemples/README.md) contient douze documents de démonstration
 et deux fichiers volontairement invalides. Les données sont fictives, sauf l’IBAN
 du spécimen public Febelfin utilisé dans l’exemple de bulletin : aucun paiement ne
 doit être effectué. Le guide précise les montants attendus et les fonctionnalités
-à tester. Ces fichiers sont exclus de la publication statique.
+à tester. Les exemples 08 à 12 permettent de comparer les accents précomposés et
+décomposés, les limites de 26/27 caractères, une communication trop longue et un
+IBAN invalide. Ces fichiers sont exclus de la publication statique.
 
 ## Périmètre
 

@@ -38,6 +38,10 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 - Conservation du XML et des valeurs extraites, y compris les textes mal
   échappés. Les contrôles supplémentaires ne constituent pas une validation Peppol.
 - Exemple 07 adapté avec un nom fictif assez court pour exercer le gabarit.
+- Cinq exemples fictifs supplémentaires (08 à 12) : comparaison du même nom de
+  26 caractères avec accents précomposés ou décomposés, nom décomposé de
+  27 caractères, communication libre de 35 caractères et IBAN invalide.
+  Le guide des exemples décrit le bulletin ou le motif d’exclusion attendu.
 - **57 tests sur 57 passent**, soit 14 lecteur XML,
   21 paiement, 20 application et 2 construction/version. Positions des graphèmes
   comparées aux centres des cases, limites de champs et accents décomposés testés
