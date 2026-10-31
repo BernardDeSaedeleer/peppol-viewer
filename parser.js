@@ -173,35 +173,65 @@
     if (digits.slice(10) !== check) return unchanged;
     return { text: `+++${digits.slice(0, 3)}/${digits.slice(3, 7)}/${digits.slice(7)}+++`, structured: true };
   }
-  function transferDetails(data) {
-    if (data?.credit !== false || data.currency !== 'EUR' || data.payments?.length !== 1) return null;
+  function assessTransfer(data) {
+    const unavailable = reason => ({ transfer: null, reason });
+    if (data?.credit === true) return unavailable('Une note de crédit ne donne pas lieu à un bulletin de virement.');
+    if (data?.credit !== false) return unavailable('Le type de document ne permet pas d’établir un bulletin de virement.');
+    if (!data.currency) return unavailable('La devise de la facture est absente.');
+    if (data.currency !== 'EUR') return unavailable('Le bulletin est réservé aux factures en euros.');
+    if (!data.payments?.length) return unavailable('Aucun moyen de paiement n’est renseigné dans la facture.');
+    if (data.payments.length !== 1) return unavailable('Plusieurs moyens de paiement sont renseignés ; aucun n’est choisi automatiquement.');
     const payment = data.payments[0];
-    if (!payment || payment.hasMandate || payment.hasCardAccount || payment.mandate || (payment.accountCount !== undefined && payment.accountCount !== 1)) return null;
-    const account = checkedIban(payment.account);
-    if (!account) return null;
-    const reference = paymentReference(payment.reference, account);
+    if (!payment) return unavailable('Les informations du moyen de paiement sont absentes.');
+    if (payment.hasMandate || payment.mandate) return unavailable('Un mandat de paiement est renseigné ; aucun bulletin de virement n’est proposé.');
+    if (payment.hasCardAccount) return unavailable('Un paiement par carte est renseigné ; aucun bulletin de virement n’est proposé.');
     const code = String(payment.code ?? '').trim();
+    if (code === '10') return unavailable('Le paiement est prévu en espèces.');
+    if (code === '48') return unavailable('Le paiement est prévu par carte.');
+    if (['49', '59'].includes(code)) return unavailable('Le paiement est prévu par prélèvement.');
+    if (!['30', '58', '42', '1', ''].includes(code)) return unavailable('Le moyen de paiement indiqué ne permet pas d’établir un bulletin de virement.');
+    if (payment.accountCount === 0) return unavailable('Aucun compte bénéficiaire n’est renseigné.');
+    if (payment.accountCount !== undefined && payment.accountCount !== 1) return unavailable('Le compte bénéficiaire ne peut pas être choisi sans ambiguïté.');
+    if (!String(payment.account ?? '').trim()) return unavailable('L’IBAN du bénéficiaire est absent.');
+    const account = checkedIban(payment.account);
+    if (!account) return unavailable('L’IBAN du bénéficiaire est invalide.');
+    const reference = paymentReference(payment.reference, account);
     // An undefined means is useful only when both Belgian payment clues agree.
-    if (!['30', '58', '42'].includes(code) && !(['1', ''].includes(code) && account.startsWith('BE') && reference.structured)) return null;
+    if (['1', ''].includes(code) && !(account.startsWith('BE') && reference.structured)) return unavailable('Le moyen de paiement n’indique pas explicitement un virement ; un IBAN belge et une communication structurée belge valide sont alors nécessaires.');
     const amount = data.totals?.PayableAmount;
-    if (!amount || (amount.currency && amount.currency !== 'EUR')) return null;
-    const match = /^\+?(\d+)(?:\.(\d+))?$/.exec(String(amount.value ?? '').trim());
-    if (!match || /[1-9]/.test((match[2] || '').slice(2))) return null;
+    if (!amount) return unavailable('Le montant à payer est absent.');
+    if (amount.currency && amount.currency !== 'EUR') return unavailable('Le montant à payer n’est pas exprimé en euros.');
+    const value = String(amount.value ?? '').trim();
+    if (!value) return unavailable('Le montant à payer est absent.');
+    if (/^-\d+(?:\.\d+)?$/.test(value)) return unavailable('Le montant à payer est négatif ou nul.');
+    const match = /^\+?(\d+)(?:\.(\d+))?$/.exec(value);
+    if (!match) return unavailable('Le montant à payer n’est pas un nombre décimal valide.');
+    if (/[1-9]/.test((match[2] || '').slice(2))) return unavailable('Le montant à payer comporte une fraction de centime ; il n’est pas arrondi automatiquement.');
     const euros = match[1].replace(/^0+(?=\d)/, '');
     const cents = (match[2] || '').padEnd(2, '0').slice(0, 2);
-    if (!/[1-9]/.test(euros + cents)) return null;
+    if (!/[1-9]/.test(euros + cents)) return unavailable('Le montant à payer est nul.');
     const beneficiary = data.payee?.name || payment.name || data.supplier?.name || '';
-    if (!beneficiary) return null;
+    if (!beneficiary) return unavailable('Le nom du bénéficiaire est absent.');
     // Never borrow the supplier's address for a separately named beneficiary.
     const party = data.payee?.name ? data.payee : beneficiary === data.supplier?.name ? data.supplier : null;
-    return {
+    const transfer = {
       beneficiary, address: [...(party?.address || [])], account: account.match(/.{1,4}/g).join(' '),
       bank: payment.bank || '', reference, euros, cents, dueDate: data.dueDate || '',
     };
+    return { transfer, reason: '' };
+  }
+  function transferDetails(data) {
+    return assessTransfer(data).transfer;
+  }
+  function formCharacters(text) {
+    // Keep a base and its combining accents in one cell without normalizing the
+    // source. Preserve orphan marks too; alphabet validation decides admissibility.
+    return String(text ?? '').match(/\P{M}\p{M}*|\p{M}+/gu) || [];
   }
   function febelfinDetails(data) {
-    const transfer = transferDetails(data);
-    if (!transfer) return null;
+    const eligibility = assessTransfer(data);
+    const { transfer } = eligibility;
+    if (!transfer) return eligibility;
     const unavailable = reason => ({ transfer, reason });
     // These limits belong to the fixed form, not to the invoice parser. Never
     // truncate, repair an entity or borrow another party's address to make it fit.
@@ -223,14 +253,14 @@
     // text such as a literal &apos; left after normal XML parsing.
     const latinText = /^(?:\p{Script=Latin}\p{M}*|[0-9 .,'’&()+/:;–—-])*$/u;
     for (const [key, label] of [['beneficiary', 'Le nom du bénéficiaire'], ['street', 'La rue du bénéficiaire'], ['locality', 'La localité du bénéficiaire']]) {
-      if ([...fields[key]].length > 26) return unavailable(`${label} dépasse les 26 caractères du gabarit.`);
+      if (formCharacters(fields[key]).length > 26) return unavailable(`${label} dépasse les 26 caractères du gabarit.`);
       if (!latinText.test(fields[key]) || /&(?:#\d+|#X[\dA-F]+|[A-Z][A-Z\d]+);/.test(fields[key])) {
         return unavailable(`${label} contient des caractères qui ne peuvent pas être repris dans le gabarit.`);
       }
     }
     if (fields.bank && !/^[A-Z]{6}[A-Z\d]{2}(?:[A-Z\d]{3})?$/.test(fields.bank)) return unavailable('Le BIC ne peut pas être repris dans les huit ou onze cases prévues.');
     if (!transfer.reference.structured) {
-      if (fields.reference.length > 34) return unavailable('La communication dépasse les 34 caractères du gabarit.');
+      if (formCharacters(fields.reference).length > 34) return unavailable('La communication dépasse les 34 caractères du gabarit.');
       if (!/^[A-Z\d +/=-]*$/.test(fields.reference)) return unavailable('La communication contient des caractères non prévus dans le gabarit.');
     }
     return { transfer, fields, reason: '' };
@@ -249,5 +279,5 @@
     try { return new TextDecoder(encoding, { fatal: true }).decode(bytes); }
     catch { throw new Error('L’encodage du XML est inconnu ou invalide. Essayez un export UTF-8.'); }
   }
-  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, paymentReference, transferDetails, febelfinDetails, decodeXml, MAX_BYTES });
+  globalThis.Peppol = Object.freeze({ parseInvoice, decimal, money, date, paymentReference, transferDetails, febelfinDetails, formCharacters, decodeXml, MAX_BYTES });
 })();

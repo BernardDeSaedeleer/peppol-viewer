@@ -56,6 +56,14 @@ function assertCentredInCell(svg, node) {
   assert.equal(node.getAttribute('dominant-baseline'), 'central');
   return cells[0];
 }
+function assertUnavailable(invoice, reasonPattern) {
+  assert.equal(invoice.getElementsByTagName('svg').length, 0);
+  const section = Array.from(invoice.getElementsByTagName('section')).find(node => node.className === 'details-section transfer-unavailable');
+  assert.ok(section, 'the invoice explains why the payment slip is unavailable');
+  assert.equal(section.getElementsByTagName('h3')[0].textContent, 'Bulletin de virement indisponible');
+  assert.match(section.getElementsByTagName('p')[0].textContent, reasonPattern);
+  assert.match(section.textContent, /Les données de la facture restent affichées intégralement/);
+}
 
 test('Belgian payment information and the final slip show the same structured reference', () => {
   const h = harness();
@@ -71,15 +79,45 @@ test('Belgian payment information and the final slip show the same structured re
   assert.match(slip.previousSibling.textContent, /DOCUMENT FICTIF/);
 });
 
-test('a replaced document cannot retain the preceding payment slip', () => {
+test('replacing invoices cannot retain either an old payment slip or its exclusion reason', () => {
   const h = harness();
-  for (const next of [transferXml.replace('>292.82</cbc:PayableAmount>', '>0</cbc:PayableAmount>'),
-    fs.readFileSync(new URL('../exemples/04-note-de-credit.xml', import.meta.url), 'utf8'),
-    transferXml.replace('202600010195', '202600010196')]) {
+  for (const [next, reason] of [
+    [transferXml.replace('>292.82</cbc:PayableAmount>', '>0</cbc:PayableAmount>'), /montant.*nul/i],
+    [fs.readFileSync(new URL('../exemples/04-note-de-credit.xml', import.meta.url), 'utf8'), /note de crédit/i],
+    [transferXml.replace('202600010195', '202600010196'), /communication structurée.*valide/i],
+  ]) {
     h.registered[0].execute({ xml: transferXml });
-    assert.match(h.serialized(), /Bulletin de virement/);
+    assert.equal(h.doc.getElementById('invoice').getElementsByTagName('svg').length, 1);
+    assert.doesNotMatch(h.doc.getElementById('invoice').textContent, /indisponible/);
     h.registered[0].execute({ xml: next });
-    assert.doesNotMatch(h.serialized(), /Bulletin de virement/);
+    assertUnavailable(h.doc.getElementById('invoice'), reason);
+  }
+  h.registered[0].execute({ xml: transferXml });
+  assert.equal(h.doc.getElementById('invoice').getElementsByTagName('svg').length, 1);
+  assert.doesNotMatch(h.doc.getElementById('invoice').textContent, /indisponible/);
+});
+
+test('payment eligibility exclusions explain the cause while keeping invoice data visible', () => {
+  const h = harness();
+  const payment = transferXml.match(/<cac:PaymentMeans>.*?<\/cac:PaymentMeans>/s)[0];
+  const cases = [
+    [transferXml.replace('BE68539007547034', 'BE68539007547035'), /IBAN.*invalide/i, 'BE68539007547035'],
+    [transferXml.replace('<cbc:ID>BE68539007547034</cbc:ID>', ''), /IBAN.*absent/i],
+    [transferXml.replace('202600010195', 'REFERENCE LIBRE DEMO'), /communication structurée.*valide/i, 'REFERENCE LIBRE DEMO'],
+    [transferXml.replace('PaymentMeansCode>1<', 'PaymentMeansCode>59<'), /prélèvement/i, 'BE68539007547034'],
+    [transferXml.replace('DocumentCurrencyCode>EUR<', 'DocumentCurrencyCode>USD<'), /euros/i, 'USD'],
+    [transferXml.replace('>292.82</cbc:PayableAmount>', '>292.821</cbc:PayableAmount>'), /fraction de centime/i],
+    [transferXml.replace(payment, payment + payment), /plusieurs moyens de paiement/i, 'BE68539007547034'],
+    [transferXml.replace(payment, ''), /aucun moyen de paiement/i],
+  ];
+  for (const [source, reason, originalValue] of cases) {
+    h.registered[0].execute({ xml: source });
+    const invoice = h.doc.getElementById('invoice');
+    assertUnavailable(invoice, reason);
+    assert.match(invoice.firstChild.textContent, /DEMO-2026-007/);
+    assert.match(invoice.firstChild.textContent, /Atelier Pixel Démo/);
+    assert.match(invoice.firstChild.textContent, /Rue des Exemples 12/);
+    if (originalValue) assert.ok(invoice.firstChild.textContent.includes(originalValue), originalValue);
   }
 });
 
@@ -186,6 +224,56 @@ test('a decomposed accent stays with its letter in one cell without normalising 
   assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn.slice(0, 11));
   assert.ok(invoice.firstChild.textContent.includes(name));
   assert.ok(!invoice.firstChild.textContent.includes(name.normalize('NFC')));
+});
+
+test('composed and decomposed accented names and addresses fill 26 cells and exclude 27 without truncation', () => {
+  const h = harness();
+  for (const unit of ['é', 'e\u0301']) {
+    for (const [field, original, prefix, top] of [
+      ['beneficiary', 'Atelier Pixel Démo', '', 75.62],
+      ['street', 'Rue des Exemples 12', '', 79.95],
+      ['locality', 'Ville-Démo', 'BE 0000 ', 84.14],
+    ]) {
+      for (const count of [26, 27]) {
+        const value = unit.repeat(count - prefix.length);
+        h.registered[0].execute({ xml: transferXml.replaceAll(original, value) });
+        const invoice = h.doc.getElementById('invoice');
+        assert.ok(invoice.firstChild.textContent.includes(value), 'the complete original spelling remains in the invoice');
+        if (unit === 'e\u0301') assert.ok(!invoice.firstChild.textContent.includes(value.normalize('NFC')));
+        if (count === 27) {
+          assertUnavailable(invoice, /26 caractères/);
+          continue;
+        }
+        const svg = invoice.getElementsByTagName('svg')[0];
+        assert.ok(svg, `${field} fits 26 cells with ${JSON.stringify(unit)}`);
+        const nodes = formFields(svg, field);
+        assert.equal(nodes.length, 26);
+        assert.equal(nodes.map(node => node.textContent).join(''), prefix + value.toUpperCase());
+        const drawn = Array.from(svg.getElementsByTagName('rect')).filter(cell => Number(cell.getAttribute('y')) === top && Number(cell.getAttribute('width')) === 4.04);
+        assert.equal(drawn.length, 26);
+        assert.deepEqual(nodes.map(node => assertCentredInCell(svg, node)), drawn);
+      }
+    }
+  }
+});
+
+test('letters expanded by uppercasing are counted as printed without changing the invoice spelling', () => {
+  const h = harness();
+  for (const prefixLength of [24, 25]) {
+    const name = 'A'.repeat(prefixLength) + 'ß';
+    h.registered[0].execute({ xml: transferXml.replaceAll('Atelier Pixel Démo', name) });
+    const invoice = h.doc.getElementById('invoice');
+    assert.ok(invoice.firstChild.textContent.includes(name));
+    if (prefixLength === 25) {
+      assertUnavailable(invoice, /26 caractères/);
+      continue;
+    }
+    const svg = invoice.getElementsByTagName('svg')[0];
+    const nodes = formFields(svg, 'beneficiary');
+    assert.equal(nodes.length, 26);
+    assert.equal(nodes.map(node => node.textContent).join(''), 'A'.repeat(24) + 'SS');
+    for (const node of nodes) assertCentredInCell(svg, node);
+  }
 });
 
 test('payer, signature and execution date stay blank while invoice due date remains outside the form', () => {

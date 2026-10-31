@@ -4,7 +4,12 @@ import { DOMParser } from '@xmldom/xmldom';
 
 globalThis.DOMParser = DOMParser;
 await import('../parser.js');
-const { paymentReference, transferDetails, febelfinDetails, parseInvoice } = globalThis.Peppol;
+const { paymentReference, transferDetails, febelfinDetails, formCharacters, parseInvoice } = globalThis.Peppol;
+
+const freeze = value => {
+  if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
+  return value;
+};
 
 // Synthetic accounts with valid IBAN check digits; no real beneficiary or customer.
 const BE = 'BE54000000000097';
@@ -255,13 +260,51 @@ test('fixed form boundary capacities reject overflow without cutting values', ()
   assert.equal(febelfinDetails(data).transfer.euros, '90071992547409931234567890');
 });
 
+test('form cells keep combining accents with their base and preserve every source character', () => {
+  assert.deepEqual(formCharacters('Ée\u0301a\u0301\u0327'), ['É', 'e\u0301', 'a\u0301\u0327']);
+  assert.deepEqual(formCharacters('\u0301\u0327A'), ['\u0301\u0327', 'A']);
+  assert.deepEqual(formCharacters(''), []);
+  for (const source of ['é', 'e\u0301', 'a\u0301\u0327', '\u0301\u0327', ' A\t\n𐐀 ', '&apos;']) {
+    assert.equal(formCharacters(source).join(''), source);
+  }
+  assert.notEqual(formCharacters('e\u0301')[0], 'é');
+});
+
+test('NFC and NFD Latin text both fit 26 form cells and overflow at 27 without changing source data', () => {
+  for (const [field, change] of [
+    ['beneficiary', (data, value) => { data.supplier.name = value; }],
+    ['street', (data, value) => { data.supplier.postal.street = value; }],
+    ['locality', (data, value) => { Object.assign(data.supplier.postal, { country: '', postalCode: '', city: value }); }],
+  ]) {
+    for (const character of ['é', 'e\u0301', 'a\u0301\u0327']) {
+      for (const count of [26, 27]) {
+        const data = formInvoice();
+        const source = character.repeat(count);
+        change(data, source);
+        const before = structuredClone(data);
+        const result = febelfinDetails(freeze(data));
+        if (count === 26) {
+          assert.equal(result.reason, '', `${field}: ${character}`);
+          assert.equal(result.fields[field], source.toUpperCase());
+          assert.equal(formCharacters(result.fields[field]).length, 26);
+        } else {
+          assert.match(result.reason, /26 caractères/, `${field}: ${character}`);
+          assert.equal('fields' in result, false);
+        }
+        assert.deepEqual(data, before);
+        assert.deepEqual(result.transfer, transferDetails(data));
+      }
+    }
+  }
+});
+
 test('form limits apply after uppercase, with no transliteration, entity repair or space collapsing', () => {
   const data = formInvoice();
   data.supplier.name = 'École Œuvre d’Été';
   assert.equal(febelfinDetails(data).fields.beneficiary, 'ÉCOLE ŒUVRE D’ÉTÉ');
   data.supplier.name = 'A'.repeat(25) + 'ß';
   assert.match(febelfinDetails(data).reason, /26 caractères/);
-  for (const name of ['Test &apos; nom', 'Test &#39; nom', 'Test &#x27; nom', 'Test\nnom', 'Test\tnom', 'Test \u202enom', 'Entreprise 测试']) {
+  for (const name of ['Test &apos; nom', 'Test &#39; nom', 'Test &#x27; nom', 'Test\nnom', 'Test\tnom', 'Test \u202enom', 'Entreprise 测试', '\u0301École']) {
     data.supplier.name = name;
     const result = febelfinDetails(data);
     assert.ok(result.reason, name);
@@ -278,6 +321,17 @@ test('form limits apply after uppercase, with no transliteration, entity repair 
   }
   data.payments[0].reference = ' REF  42 ';
   assert.equal(febelfinDetails(data).fields.reference, ' REF  42 ');
+});
+
+test('combining accents do not turn an unsupported free communication into a capacity overflow', () => {
+  const data = formInvoice();
+  data.payments[0].reference = 'e\u0301'.repeat(34);
+  const before = structuredClone(data);
+  const result = febelfinDetails(freeze(data));
+  assert.match(result.reason, /caractères non prévus/);
+  assert.equal('fields' in result, false);
+  assert.equal(result.transfer.reference.text, before.payments[0].reference);
+  assert.deepEqual(data, before);
 });
 
 test('form BIC accepts eight or eleven characters and never removes unexpected characters', () => {
@@ -330,7 +384,6 @@ test('form preparation preserves deeply frozen parsed XML, including normally de
     <cac:LegalMonetaryTotal><cbc:PayableAmount currencyID="EUR">42.00</cbc:PayableAmount></cac:LegalMonetaryTotal>
     <cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine>
   </Invoice>`;
-  const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
   const data = freeze(parseInvoice(xml));
   const before = structuredClone(data);
   const result = febelfinDetails(data);
@@ -348,14 +401,55 @@ test('form preparation preserves deeply frozen parsed XML, including normally de
   assert.deepEqual(escaped, escapedBefore);
 });
 
-test('the fixed form retains all existing transfer eligibility exclusions', () => {
-  for (const change of [
-    data => { data.credit = true; }, data => { data.currency = 'USD'; },
-    data => { data.payments[0].account = 'BE0000'; }, data => { data.payments[0].hasMandate = true; },
-    data => { data.payments.push({ ...data.payments[0] }); }, data => { data.totals.PayableAmount.value = '0'; },
+test('every transfer exclusion explains why no slip is available without changing invoice data', () => {
+  for (const [label, change, reason] of [
+    ['credit note', data => { data.credit = true; }, /note de crédit/],
+    ['missing document type', data => { delete data.credit; }, /type de document/],
+    ['unsupported document type', data => { data.credit = 'Invoice'; }, /type de document/],
+    ['missing currency', data => { delete data.currency; }, /devise.*absente/],
+    ['foreign currency', data => { data.currency = 'USD'; }, /factures en euros/],
+    ['no payment means', data => { data.payments = []; }, /Aucun moyen de paiement/],
+    ['missing payment means', data => { delete data.payments; }, /Aucun moyen de paiement/],
+    ['multiple payment means', data => { data.payments.push({ ...data.payments[0] }); }, /Plusieurs moyens de paiement/],
+    ['missing payment entry', data => { data.payments = [null]; }, /informations.*absentes/],
+    ['empty mandate', data => { data.payments[0].hasMandate = true; }, /mandat/],
+    ['named mandate', data => { data.payments[0].mandate = 'DEMO'; }, /mandat/],
+    ['card account', data => { data.payments[0].hasCardAccount = true; }, /carte/],
+    ['cash without IBAN', data => { Object.assign(data.payments[0], { code: '10', account: '', accountCount: 0 }); }, /espèces/],
+    ['card without IBAN', data => { Object.assign(data.payments[0], { code: '48', account: '', accountCount: 0 }); }, /carte/],
+    ['direct debit without IBAN', data => { Object.assign(data.payments[0], { code: '49', account: '', accountCount: 0 }); }, /prélèvement/],
+    ['SEPA direct debit', data => { data.payments[0].code = '59'; }, /prélèvement/],
+    ['unsupported code', data => { data.payments[0].code = '999'; }, /moyen de paiement indiqué/],
+    ['no account', data => { data.payments[0].accountCount = 0; }, /Aucun compte bénéficiaire/],
+    ['multiple accounts', data => { data.payments[0].accountCount = 2; }, /compte bénéficiaire.*ambiguïté/],
+    ['missing IBAN', data => { delete data.payments[0].account; }, /IBAN.*absent/],
+    ['blank IBAN', data => { data.payments[0].account = '  '; }, /IBAN.*absent/],
+    ['invalid IBAN', data => { data.payments[0].account = 'BE0000'; }, /IBAN.*invalide/],
+    ['35-character IBAN', data => { data.payments[0].account = BE + '0'.repeat(19); }, /IBAN.*invalide/],
+    ['unspecified means with free reference', data => { Object.assign(data.payments[0], { code: '1', reference: 'A'.repeat(35) }); }, /IBAN belge.*communication structurée/],
+    ['missing means with foreign IBAN', data => { Object.assign(data.payments[0], { code: '', account: DE }); }, /IBAN belge.*communication structurée/],
+    ['missing payable amount', data => { delete data.totals.PayableAmount; }, /montant à payer est absent/],
+    ['missing totals', data => { delete data.totals; }, /montant à payer est absent/],
+    ['missing payable value', data => { delete data.totals.PayableAmount.value; }, /montant à payer est absent/],
+    ['blank payable value', data => { data.totals.PayableAmount.value = ' '; }, /montant à payer est absent/],
+    ['foreign payable currency', data => { data.totals.PayableAmount.currency = 'USD'; }, /montant à payer.*euros/],
+    ['negative amount', data => { data.totals.PayableAmount.value = '-1'; }, /négatif/],
+    ['negative zero', data => { data.totals.PayableAmount.value = '-0.00'; }, /nul/],
+    ['zero amount', data => { data.totals.PayableAmount.value = '+0.000'; }, /montant à payer est nul/],
+    ['non-numeric amount', data => { data.totals.PayableAmount.value = 'pas un montant'; }, /nombre décimal valide/],
+    ['fraction of a cent', data => { data.totals.PayableAmount.value = '292.821'; }, /fraction de centime/],
+    ['missing beneficiary', data => { data.supplier.name = ''; }, /nom du bénéficiaire.*absent/],
   ]) {
     const data = formInvoice();
     change(data);
-    assert.equal(febelfinDetails(data), null);
+    const before = structuredClone(data);
+    const result = febelfinDetails(freeze(data));
+    assert.equal(result.transfer, null, label);
+    assert.match(result.reason, reason, label);
+    assert.deepEqual(Object.keys(result).sort(), ['reason', 'transfer'], label);
+    assert.equal(transferDetails(data), null, label);
+    assert.deepEqual(data, before, label);
   }
+  assert.match(febelfinDetails(null).reason, /type de document/);
+  assert.match(febelfinDetails(undefined).reason, /type de document/);
 });

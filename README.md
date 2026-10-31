@@ -123,6 +123,11 @@ structurée valide. Les avoirs, prélèvements, mandats, cartes, espèces, factu
 soldées, autres devises et comptes multiples n’affichent pas ce bulletin. La présence
 d’une carte exclut aussi le bulletin si le code indique un virement ; plusieurs
 identifiants bancaires dans un seul compte sont également refusés.
+Dans chaque cas d’exclusion, une explication concise accompagne la mention
+« Bulletin de virement indisponible ». Cela concerne aussi les avoirs, les
+paiements en espèces et les autres devises : la facture reste affichée et n’est
+pas déclarée invalide pour autant. Si plusieurs conditions empêchent le bulletin,
+seule la première raison rencontrée est indiquée.
 Une communication de douze chiffres avec une clé modulo 97 valide est présentée
 sous la forme `+++ddd/dddd/ddddd+++` dans le contexte d’un compte belge ; les
 autres références conservent leur texte.
@@ -144,11 +149,17 @@ sous le bulletin à l’écran ou dans le PDF.
 Les données sont présentées en majuscules dans le bulletin, avec leurs accents.
 Le XML et les valeurs extraites ne sont pas modifiés. Une entité doublement
 échappée, telle que `&amp;apos;` dans le XML, n’est pas réparée par l’application.
-Si un nom ou une ligne d’adresse dépasse 26 caractères, une communication libre
+Si un nom ou une ligne d’adresse dépasse 26 caractères affichés, une communication libre
 34 caractères, ou si un autre champ ne peut pas être représenté dans les zones
 prévues, un message explique l’absence du bulletin. Aucune valeur n’est coupée,
 abrégée ou imprimée avec une police réduite pour la faire entrer. Les informations
 de facture et de paiement restent consultables.
+
+Une lettre et ses accents combinants comptent comme un seul caractère affiché,
+dans une seule case. Une ligne de 26 lettres accentuées tient donc de la même
+façon, que le XML contienne des lettres accentuées précomposées ou des lettres
+suivies d’un accent combinant ; une ligne de 27 caractères est refusée. Le texte
+source conserve son encodage et sa représentation Unicode.
 
 Cette adaptation suit l’option de remplissage par cases prévue par le guide
 public Febelfin ; son décor est reconstruit d’après le modèle publié et ses
@@ -207,15 +218,20 @@ gabarit et l’absence de mutation des données. Les résultats de cette candida
 et les contrôles visuels sont consignés dans la
 [section de vérification v0.1.6](docs/technical-design.md#104-vérifications-de-la-candidate-v016).
 
-Le 31 octobre 2026, après la correction du centrage, les **51 tests sur 51 passent** :
-14 lecteur XML, 18 paiement, 17 application et 2 construction/version. Les tests
+Le 31 octobre 2026, la suite complète compte **57 tests sur 57 passants** :
+14 lecteur XML, 21 paiement, 20 application et 2 construction/version. Les tests
 comparent notamment la position de chaque graphème au centre de sa case, les
 limites de champs et la conservation des accents. Le build et le contrôle du
-diff réussissent après cette correction. L’exemple 07 a été réinspecté
+diff réussissent après ces compléments. L’exemple 07 a été réinspecté
 sur ordinateur et à une largeur mobile de 390 pixels, sans débordement horizontal
 et sans les deux paragraphes sous le bulletin. Un contrôle local d’un XML privé a
 confirmé la conservation du fichier et des valeurs extraites, sans publication
 de ses données.
+
+Dans le navigateur intégré, **16 scénarios supplémentaires sur 16 réussissent** :
+raisons d’exclusion visibles, valeurs conservées intégralement, limites de
+26 et 27 caractères en NFC/NFD, cases exactes et disparition du message au retour
+à une facture admissible. Aucune erreur ni débordement horizontal n’a été observé.
 
 La tentative d’impression dans le navigateur intégré n’a pas produit de PDF
 exploitable. La taille physique à 100 %, le rendu papier et la reconnaissance

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const { parseInvoice, money, decimal, date, decodeXml, paymentReference, febelfinDetails, MAX_BYTES } = globalThis.Peppol;
+  const { parseInvoice, money, decimal, date, decodeXml, paymentReference, febelfinDetails, formCharacters, MAX_BYTES } = globalThis.Peppol;
   const $ = id => document.getElementById(id);
   const homeTitle = document.title;
   let loadSequence = 0;
@@ -84,7 +84,7 @@
       const grid = grids[field];
       // Keep a letter and its combining accents in one cell without normalising
       // the value. Spaces in names/references reserve an empty cell.
-      const characters = value.match(/\P{M}\p{M}*/gu) || [];
+      const characters = formCharacters(value);
       const offset = field === 'euros' ? grid.count - characters.length : 0;
       characters.forEach((character, i) => ink.append(svgNode('text', {
         x: grid.x + grid.width / 2 + (offset + i) * grid.pitch,
@@ -103,7 +103,6 @@
   }
   function renderTransfer(data) {
     const result = febelfinDetails(data);
-    if (!result) return null;
     if (result.reason) return append(el('section', 'details-section transfer-unavailable'), el('h3', '', 'Bulletin de virement indisponible'), el('p', '', result.reason + ' Les données de la facture restent affichées intégralement.'));
     const { transfer, fields } = result;
     const section = el('section', 'transfer-section');

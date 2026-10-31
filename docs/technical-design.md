@@ -173,8 +173,9 @@ d’effacement sécurisé de la mémoire du navigateur.
 | `money(amount, fallback = '')` | `{ value, currency }`, devise de secours | Montant textuel ou `—` |
 | `date(raw)` | Date textuelle | `JJ/MM/AAAA`, texte original ou `—` |
 | `paymentReference(reference, account)` | Communication et compte textuels | `{ text, structured }` : texte à afficher et reconnaissance d’une communication structurée belge |
-| `transferDetails(data)` | Objet facture normalisé | Données du bulletin si le paiement est admissible, sinon absence de bulletin |
-| `febelfinDetails(data)` | Objet facture normalisé | `null` si le paiement n’est pas admissible ; sinon `{ transfer, reason }` en cas d’incompatibilité avec le gabarit, ou `{ transfer, fields, reason: '' }` |
+| `transferDetails(data)` | Objet facture normalisé | Données du bulletin si le paiement est admissible, sinon `null` ; contrat conservé |
+| `febelfinDetails(data)` | Objet facture normalisé | Toujours un résultat : `{ transfer: null, reason }` pour une exclusion préalable, `{ transfer, reason }` en cas d’incompatibilité avec le gabarit, ou `{ transfer, fields, reason: '' }` |
+| `formCharacters(text)` | Chaîne de présentation | Liste de caractères affichés, regroupant chaque lettre latine avec ses accents combinants ; utilisée pour compter les cases et y placer le texte |
 | `MAX_BYTES` | Sans objet | `5 * 1024 * 1024`, soit 5 242 880 octets |
 
 Forme simplifiée du résultat, en notation de type documentaire :
@@ -480,8 +481,11 @@ aucune écriture dans le XML d’origine.
 
 ### 6.5 Bulletin d’aide au paiement
 
-`transferDetails(data)` centralise l’admissibilité du bulletin ajouté à la fin
-de la facture. Toutes les conditions suivantes doivent être réunies :
+L’admissibilité du bulletin ajouté à la fin de la facture est évaluée dans une
+fonction interne commune qui fournit les données du virement ou une raison
+d’exclusion. `transferDetails(data)` conserve son contrat public historique :
+un objet si le paiement est admissible, `null` sinon. Toutes les conditions
+suivantes doivent être réunies :
 
 | Condition | Règle |
 | --- | --- |
@@ -500,6 +504,15 @@ un même compte empêchent l’affichage du bulletin. Un `CardAccount` présent 
 un code de virement reste exclu. Le bloc paiement général reste disponible. Le cas du code `1` repose
 sur le contexte belge complet : ce code seul n’est pas assimilé à un virement.
 
+`febelfinDetails(data)` reprend aussi la raison des exclusions préalables. Pour
+un document déjà lu, elle renvoie toujours un objet de résultat ; une exclusion
+du type de document, de la devise, des moyens de paiement, de l’IBAN, du montant
+ou du bénéficiaire produit `{ transfer: null, reason }`. L’interface affiche
+« Bulletin de virement indisponible » et la première raison rencontrée. Elle
+n’affiche pas une liste cumulative de motifs et ne transforme pas cette
+indisponibilité en erreur de lecture XML. Une note de crédit, une facture en
+USD ou un paiement en espèces reste consultable normalement.
+
 Le nom du bénéficiaire provient en priorité de `PayeeParty`, puis du titulaire
 du compte (`PayeeFinancialAccount/Name`), puis du fournisseur. L’adresse doit
 appartenir à la partie retenue ; l’adresse du fournisseur n’est pas reprise
@@ -509,16 +522,17 @@ acompte. Le bulletin ne corrige aucune donnée financière.
 
 #### Contraintes du gabarit
 
-La v0.1.6 applique ensuite `febelfinDetails(data)`. Cette fonction ne modifie ni
+Pour un paiement admissible, `febelfinDetails(data)` vérifie ensuite les
+contraintes du gabarit. Cette fonction ne modifie ni
 le modèle reçu, ni les résultats de `transferDetails`, ni le fichier XML. Elle
 prépare un objet `fields` réservé à la présentation, ou une raison expliquant
 pourquoi le bulletin ne peut pas être produit sans perte d’information.
 
 | Champ | Règle de présentation |
 | --- | --- |
-| `beneficiary` | Nom en majuscules, 26 caractères au maximum, accents conservés |
-| `street` | Rue, complément et lignes d’adresse joints par une espace, 26 caractères au maximum |
-| `locality` | Pays, code postal et ville joints par une espace, 26 caractères au maximum |
+| `beneficiary` | Nom en majuscules, 26 caractères affichés au maximum, accents conservés |
+| `street` | Rue, complément et lignes d’adresse joints par une espace, 26 caractères affichés au maximum |
+| `locality` | Pays, code postal et ville joints par une espace, 26 caractères affichés au maximum |
 | `account` | IBAN contrôlé ; caractères placés dans les cases sans espaces de séparation |
 | `bank` | BIC absent ou conforme à la forme de 8 ou 11 caractères, en majuscules ; aucun BIC n’est inventé |
 | `reference` | Communication structurée valide au format `+++ddd/dddd/ddddd+++`, ou communication libre en majuscules de 34 caractères au maximum |
@@ -533,6 +547,15 @@ empêchent la génération du bulletin. La communication libre se limite aux let
 `X` appartient à l’alphabet autorisé. Ces contrôles portent sur la présentation
 en majuscules ; une conversion de casse qui augmente la longueur reste soumise
 à la même capacité.
+
+Le comptage et le placement utilisent tous deux `formCharacters(text)` après
+la mise en majuscules de la copie de présentation. Cette fonction regroupe une
+lettre latine et ses accents combinants dans le même caractère affiché. Ainsi,
+`É` précomposé et `E` suivi de l’accent combinant U+0301 consomment chacun une
+case. Un nom, une rue ou une localité de 26 caractères affichés est admis en NFC
+comme en NFD ; 27 sont refusés. Les espaces conservent leur case. Ce découpage
+n’applique aucune normalisation Unicode au texte : le XML et le modèle gardent
+exactement leur représentation initiale.
 
 Une région postale ne possède pas de zone distincte dans ce gabarit : sa présence
 empêche le bulletin plutôt que de la supprimer. Si une adresse existe sans ses
@@ -918,16 +941,18 @@ le nouveau gabarit ; aucune compatibilité bancaire n’est déduite du seul res
 des dimensions CSS ou du passage des tests Node.
 
 Contrôles du **31 octobre 2026**, après le centrage de tous les champs dans leurs
-cases et la suppression des deux paragraphes sous le bulletin. Les 51 tests
-ci-dessous remplacent le résultat initial de 49 tests pour cette candidate :
+cases, la suppression des deux paragraphes sous le bulletin et les compléments
+sur les raisons d’exclusion et le comptage commun des caractères accentués :
 
 | Contrôle | Résultat et portée |
 | --- | --- |
-| Tests automatisés | **51 tests sur 51 passent** : 14 lecteur XML, 18 paiement, 17 application et 2 construction/version |
-| Construction | Build réussi après la correction du centrage ; contrôle `git diff --check` sans erreur |
+| Tests automatisés | **57 tests sur 57 passent** : 14 lecteur XML, 21 paiement, 20 application et 2 construction/version |
+| Construction | Build réussi après les derniers compléments ; contrôle `git diff --check` sans erreur |
 | Conservation des valeurs | Tests ajoutés sur un modèle gelé, les accents, les entités littérales, les limites de champs et l’association du bénéficiaire à sa propre adresse |
 | Centrage par case | Position de chaque graphème comparée au centre du rectangle correspondant ; débuts des rangées, alignement du montant à droite, nom de 26 caractères, communication de 34 caractères, code `02` et IBAN étranger de 22 caractères vérifiés |
 | Accents décomposés | Une lettre et son accent combinant en NFD restent dans la même case, sans modification de la source |
+| Exclusions et limites dans le navigateur | **16 scénarios supplémentaires sur 16 réussissent** : messages d’exclusion présents, valeurs intégrales conservées, nom admis à 26 caractères affichés et refusé à 27 en NFC/NFD, adresse de 26 caractères en NFD, cellules exactes, absence d’erreur et de débordement horizontal |
+| Remplacement du document | Le motif d’indisponibilité disparaît au retour à une facture admissible |
 | Écran sur ordinateur | Exemple `07-bulletin-virement.xml` réouvert et inspecté avec le centrage par case ; aucun paragraphe de commentaire sous le bulletin |
 | Largeur mobile | Même exemple réinspecté à 390 × 844 pixels ; `clientWidth = scrollWidth = 375` pixels, proportions conservées sans débordement horizontal ; aucun paragraphe de commentaire sous le bulletin |
 | XML privé | Contrôle local d’un document de 16 lignes : gabarit admissible, fichier et modèle comparés inchangés ; les textes littéraux `&apos;` restent tels quels ; aucune donnée de facture partagée |

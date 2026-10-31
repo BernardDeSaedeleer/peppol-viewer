@@ -27,13 +27,26 @@ suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
   34 caractères avec alphabet autorisé, BIC de 8 ou 11 caractères, capacité du
   montant. Une valeur incompatible entraîne un message explicite sans bulletin,
   sans troncature, abréviation, réduction de police ou correction de la source.
+- Explication de chaque exclusion du bulletin, y compris celles liées au type
+  de document, à la devise, au moyen de paiement, à l’IBAN ou au montant. Une
+  seule raison concise est affichée ; l’absence de bulletin ne transforme pas
+  un avoir ou un paiement en espèces en erreur de lecture XML.
+- Comptage et placement partagent le même découpage des caractères affichés.
+  Une lettre latine et ses accents combinants restent ensemble : 26 caractères
+  sont admis pour le nom, la rue ou la localité en NFC comme en NFD, 27 sont
+  refusés. Aucun texte source n’est normalisé ou réécrit.
 - Conservation du XML et des valeurs extraites, y compris les textes mal
   échappés. Les contrôles supplémentaires ne constituent pas une validation Peppol.
 - Exemple 07 adapté avec un nom fictif assez court pour exercer le gabarit.
-- **51 tests sur 51 passent** après correction du centrage : 14 lecteur XML,
-  18 paiement, 17 application et 2 construction/version. Positions des graphèmes
+- **57 tests sur 57 passent**, soit 14 lecteur XML,
+  21 paiement, 20 application et 2 construction/version. Positions des graphèmes
   comparées aux centres des cases, limites de champs et accents décomposés testés
-  sans modification de la source. Build et contrôle du diff réussis après correction.
+  sans modification de la source. Build et contrôle du diff réussis après les
+  compléments sur les exclusions et le comptage.
+- **16 scénarios supplémentaires sur 16 réussissent dans le navigateur intégré** :
+  messages d’exclusion, valeurs intégrales, limites de 26/27 caractères en NFC/NFD,
+  cases exactes et suppression du motif lors du retour à une facture admissible,
+  sans erreur ni débordement horizontal.
 - Exemple 07 réinspecté sur ordinateur et à 390 × 844 pixels, sans débordement
   horizontal et sans les deux paragraphes sous le bulletin. Contrôle local d’une
   facture privée : gabarit admissible, fichier et modèle inchangés, entités
