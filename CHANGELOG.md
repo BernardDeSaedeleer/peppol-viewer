@@ -3,6 +3,14 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
+## 0.1.7 — 2026-11-14 — préversion
+
+- L’application s’ouvre par double-clic sur `Peppol-Viewer-0.1.7.html`.
+  Le fichier contient le lecteur XML, l’aperçu de facture, le bulletin,
+  les styles d’impression, la mascotte et l’icône.
+- Le build assemble les sources du dépôt dans `dist/index.html` et calcule
+  les empreintes SHA-256 des scripts et des styles pour la politique de sécurité.
+
 ## 0.1.6 — 2026-10-31 — préversion
 
 - Bulletin vectoriel adapté au modèle du guide Febelfin : format fixe de

@@ -6,24 +6,16 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**[Télécharger Peppol Viewer 0.1.6 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Peppol-Viewer-0.1.6.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.6)
+**[Télécharger Peppol Viewer 0.1.7 (fichier HTML, 1,29 Mo)](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.7/Peppol-Viewer-0.1.7.html)** · [Notes de la préversion du 14 novembre 2026](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.7)
 
-1. Téléchargez l’archive ci-dessus.
-2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
-3. Dans le dossier extrait, double-cliquez sur **index.html**.
-4. Déposez votre facture XML dans la zone de dépôt, ou cliquez dans cette zone pour choisir le fichier.
-
-Conservez **index.html** et le dossier **assets** ensemble. Aucun logiciel
-supplémentaire ni commande à exécuter : un navigateur suffit. La lecture fonctionne
-sans connexion Internet ; toutes les données restent sur votre ordinateur.
+Double-cliquez sur `Peppol-Viewer-0.1.7.html` pour l’ouvrir dans votre navigateur.
+Déposez votre facture XML dans la zone prévue ou cliquez dans cette zone pour la
+choisir. Ce fichier contient toute l’application et fonctionne hors ligne. Pour
+l’utiliser sur un autre poste, copiez simplement le fichier HTML.
 
 Pour vérifier les mises à jour, cliquez sur **GitHub · Versions** dans le pied de
 page et comparez les versions publiées au numéro de votre copie. Cette consultation
 nécessite Internet ; aucune vérification automatique n’est effectuée.
-
-Les six fichiers sont aussi disponibles séparément sur la page de la version,
-avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -51,14 +43,8 @@ et les procédures d’exploitation.
 
 ## Utilisation locale
 
-Dans la version distribuée aux utilisateurs, ouvrir **`index.html`**. C’est le
-seul fichier à la racine, accompagné du dossier **`assets`** qui contient les
-scripts, les styles et les images. Conserver `index.html` et `assets` ensemble
-pour déplacer ou partager l’application. Il n’est pas nécessaire d’ouvrir `assets`.
-
-Ouvrir `index.html` dans un navigateur moderne. Aucun logiciel supplémentaire n’est
-nécessaire pour lire les factures. Les scripts sont classiques et fonctionnent aussi
-en `file://`.
+Ouvrir le fichier autonome dans un navigateur moderne. Depuis les sources,
+`node scripts/build.mjs` génère ce fichier sous le nom `dist/index.html`.
 
 Pour un aperçu servi en HTTP avec Node.js 22 ou ultérieur :
 
@@ -203,10 +189,10 @@ pnpm test
 pnpm build
 ```
 
-`node scripts/build.mjs` synchronise le numéro de version du pied de page, puis
-prépare `dist/index.html` et place les cinq fichiers techniques dans `dist/assets/`.
-Les chemins de l’HTML distribué sont adaptés automatiquement ; le chemin de la
-mascotte reste relatif à la feuille de style. Distribuer le contenu de `dist/`.
+`node scripts/build.mjs` synchronise le numéro de version du pied de page et
+produit `dist/index.html`. Il y intègre les deux scripts, la feuille de style,
+l’icône SVG et la mascotte PNG. La politique de sécurité du fichier autorise
+les scripts et les styles intégrés par leur empreinte SHA-256.
 `parser.js` lit et normalise le XML ; `app.js` gère les interactions et crée les éléments
 HTML avec `textContent`. `styles.css` contient les styles écran, mobile et A4.
 
@@ -263,15 +249,16 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
 - `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
 - `0.1.5` : préversion du 30 octobre 2026 ; bulletin d’aide au paiement et présentation des communications structurées belges.
-- `0.1.6` : dernière préversion publiée, le 31 octobre 2026 ; gabarit Febelfin à dimensions fixes, exclusions explicites et accents combinants, sans modification des données XML.
+- `0.1.6` introduit le gabarit Febelfin à dimensions fixes, les exclusions explicites et les accents combinants (31 octobre 2026).
+- `0.1.7` regroupe l’application dans un seul fichier HTML, publié en préversion le 14 novembre 2026.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.
 
 Pour préparer une distribution : modifier `version` dans `package.json`, décrire les
 changements dans [`CHANGELOG.md`](CHANGELOG.md), exécuter les tests puis
-`node scripts/build.mjs`. Distribuer ensemble `dist/index.html` et le dossier
-`dist/assets/` dans un dossier nommé, par exemple, `Peppol-Viewer-0.1.6`. Conserver chaque version
+`node scripts/build.mjs`. Pour la v0.1.7, distribuer une copie de `dist/index.html`
+nommée `Peppol-Viewer-0.1.7.html`. Conserver chaque version
 déjà distribuée sans en remplacer les fichiers ; attribuer un nouveau numéro à la
 distribution suivante. `node scripts/version.mjs` permet aussi de synchroniser
 uniquement le pied de page avant d’ouvrir le fichier source `index.html` directement.
