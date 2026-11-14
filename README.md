@@ -6,31 +6,16 @@ avec une architecture KISS.
 
 ## Télécharger et démarrer
 
-**Candidate v0.1.7 du 14 novembre 2026.** Double-cliquez sur
-`Peppol-Viewer-0.1.7.html`, puis déposez une facture XML dans la zone prévue.
-Ce fichier contient toute l’application et fonctionne hors ligne. Pour la déplacer
-sur un autre poste, copiez simplement le fichier HTML.
+**[Télécharger Peppol Viewer 0.1.7 (fichier HTML, 1,29 Mo)](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.7/Peppol-Viewer-0.1.7.html)** · [Notes de la préversion du 14 novembre 2026](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.7)
 
-### Dernière préversion publiée sur GitHub (v0.1.6)
-
-**[Télécharger Peppol Viewer 0.1.6 prêt à l’emploi](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Peppol-Viewer-0.1.6.zip)** · [Page de la version et téléchargement sans ZIP](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/tag/v0.1.6)
-
-1. Téléchargez l’archive ci-dessus.
-2. Sous Windows, faites un clic droit sur le fichier ZIP, puis **Extraire tout…**.
-3. Dans le dossier extrait, double-cliquez sur **index.html**.
-4. Déposez votre facture XML dans la zone de dépôt, ou cliquez dans cette zone pour choisir le fichier.
-
-Conservez **index.html** et le dossier **assets** ensemble. Aucun logiciel
-supplémentaire ni commande à exécuter : un navigateur suffit. La lecture fonctionne
-sans connexion Internet ; toutes les données restent sur votre ordinateur.
+Double-cliquez sur `Peppol-Viewer-0.1.7.html` pour l’ouvrir dans votre navigateur.
+Déposez votre facture XML dans la zone prévue ou cliquez dans cette zone pour la
+choisir. Ce fichier contient toute l’application et fonctionne hors ligne. Pour
+l’utiliser sur un autre poste, copiez simplement le fichier HTML.
 
 Pour vérifier les mises à jour, cliquez sur **GitHub · Versions** dans le pied de
 page et comparez les versions publiées au numéro de votre copie. Cette consultation
 nécessite Internet ; aucune vérification automatique n’est effectuée.
-
-Les six fichiers sont aussi disponibles séparément sur la page de la version,
-avec les instructions pour les placer dans les bons dossiers.
-[Consulter le mode d’emploi complet](https://github.com/BernardDeSaedeleer/peppol-viewer/releases/download/v0.1.6/Mode-emploi.txt).
 
 Cette **préversion** est destinée aux premiers essais et retours utilisateurs.
 La pagination PDF reste à vérifier selon le navigateur et le document.
@@ -264,8 +249,8 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` :
 
 - `0.1.4` : zone de dépôt simplifiée et corrections TVA/PDF conservées.
 - `0.1.5` : préversion du 30 octobre 2026 ; bulletin d’aide au paiement et présentation des communications structurées belges.
-- `0.1.6` : dernière préversion publiée, le 31 octobre 2026 ; gabarit Febelfin à dimensions fixes, exclusions explicites et accents combinants, sans modification des données XML.
-- `0.1.7` regroupe l’application dans un seul fichier HTML. Candidate du 14 novembre 2026.
+- `0.1.6` introduit le gabarit Febelfin à dimensions fixes, les exclusions explicites et les accents combinants (31 octobre 2026).
+- `0.1.7` regroupe l’application dans un seul fichier HTML, publié en préversion le 14 novembre 2026.
 - `0.2.0` : ajout de fonctionnalités pendant la phase de préparation.
 - `1.0.0` : première version stable ; ensuite, changement majeur pour une évolution
   incompatible, mineur pour une fonction compatible, correctif pour une réparation.

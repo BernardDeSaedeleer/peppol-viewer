@@ -1,8 +1,10 @@
 # Peppol Viewer — Conception technique
 
-La **candidate v0.1.7 du 14 novembre 2026** réunit l’application dans un seul
-fichier HTML. La dernière préversion publiée sur GitHub est la **v0.1.6**
-du 31 octobre 2026. La section 10.4 présente les contrôles de cette préversion.
+La **v0.1.7, publiée en préversion le 14 novembre 2026**, réunit l’application
+dans un seul fichier HTML téléchargeable. Les 57 tests passent. Les 20 scénarios
+d’interface ont aussi été exécutés avec les scripts extraits du fichier distribué.
+L’ouverture par double-clic reste à confirmer dans un navigateur de bureau.
+La section 10.4 présente les contrôles du bulletin réalisés pour la v0.1.6.
 Les dimensions du bulletin dans le PDF et sur papier ainsi que la reconnaissance
 bancaire restent à vérifier.
 

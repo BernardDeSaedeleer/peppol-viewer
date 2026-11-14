@@ -3,7 +3,7 @@
 Chaque version distribuée conserve son numéro et ses fichiers. Les changements
 suivants appartiennent à une nouvelle version, renseignée dans `package.json`.
 
-## 0.1.7 — 2026-11-14 — candidate
+## 0.1.7 — 2026-11-14 — préversion
 
 - L’application s’ouvre par double-clic sur `Peppol-Viewer-0.1.7.html`.
   Le fichier contient le lecteur XML, l’aperçu de facture, le bulletin,
