@@ -1,12 +1,10 @@
 # Peppol Viewer — Conception technique
 
-État documenté : version applicative **0.1.6**, publiée comme préversion le
-**31 octobre 2026**. Les tests et contrôles
-de cette version sont consignés en section 10.4. Les résultats historiques,
-dont le PDF natif fourni pour la v0.1.5, restent limités aux versions examinées.
-La dernière distribution publiée est la préversion **0.1.6**. La publication ne
-vaut pas validation du PDF à taille réelle, de l’impression papier ou de la
-reconnaissance bancaire ; ces contrôles restent à réaliser.
+La **candidate v0.1.7 du 14 novembre 2026** réunit l’application dans un seul
+fichier HTML. La dernière préversion publiée sur GitHub est la **v0.1.6**
+du 31 octobre 2026. La section 10.4 présente les contrôles de cette préversion.
+Les dimensions du bulletin dans le PDF et sur papier ainsi que la reconnaissance
+bancaire restent à vérifier.
 
 Ce document décrit le fonctionnement implémenté, ses décisions de conception et
 ses limites. Il complète le [README](../README.md), qui contient le démarrage rapide.
@@ -86,7 +84,7 @@ factures par ce parcours.
 | [favicon.svg](../favicon.svg) | Icône statique locale |
 | [mascot.png](../mascot.png) | Quatre expressions de la mascotte, sélectionnées par CSS |
 | [scripts/serve.mjs](../scripts/serve.mjs) | Serveur HTTP local à liste de fichiers autorisés |
-| [scripts/build.mjs](../scripts/build.mjs) | Prépare `dist/index.html` et le dossier `dist/assets/` |
+| [scripts/build.mjs](../scripts/build.mjs) | Intègre les ressources dans le fichier autonome `dist/index.html` |
 | [scripts/version.mjs](../scripts/version.mjs) | Synchronise la version du pied de page depuis `package.json` |
 | [tests/parser.test.mjs](../tests/parser.test.mjs) | Tests du lecteur et du formatage |
 | [tests/payment.test.mjs](../tests/payment.test.mjs) | Tests des communications et de l’admissibilité du bulletin |
@@ -100,7 +98,7 @@ factures par ce parcours.
 | --- | --- | --- |
 | HTML, CSS et JavaScript natif | Réduire les composants à maintenir pour un seul parcours | Gestion explicite du DOM et de l’état |
 | Traitement dans le navigateur | Éviter l’envoi des factures à un service de conversion | Mémoire et vitesse dépendent du poste et du navigateur |
-| Scripts classiques chargés avec `defer` | Conserver un ordre de chargement simple et permettre l’ouverture locale | `parser.js` doit précéder `app.js` |
+| Scripts classiques | Exécuter le lecteur avant l’initialisation de l’interface | Les sources utilisent `defer`. Le fichier autonome insère les scripts en fin de corps, dans l’ordre `parser.js` puis `app.js` |
 | Séparation extraction / restitution | Modifier le mapping sans mêler les règles XML à la création HTML | Un objet intermédiaire constitue le contrat interne |
 | Montants conservés comme chaînes | Préserver les décimales et signes du document | Aucune vérification arithmétique des totaux |
 | Impression native | Éviter une bibliothèque de génération PDF | Pagination et options dépendent du navigateur |
@@ -657,7 +655,7 @@ une mention de ces déclarations dans un commentaire ou une section CDATA.
 
 ### 7.2 Politique de contenu
 
-La CSP est déclarée dans une balise `meta` de `index.html` :
+La balise `meta` de la page source `index.html` déclare la politique suivante.
 
 ```text
 default-src 'self'; script-src 'self'; style-src 'self';
@@ -665,7 +663,12 @@ img-src 'self' data:; connect-src 'none'; object-src 'none';
 base-uri 'none'; form-action 'none'
 ```
 
-Les scripts et styles applicatifs sont des fichiers locaux. `connect-src 'none'`
+Dans le HTML autonome, le build calcule l’empreinte SHA-256 de chaque bloc
+JavaScript et CSS et l’inscrit dans `script-src` ou `style-src`. Le navigateur
+applique ainsi la politique aux blocs intégrés. L’icône et la mascotte utilisent
+des URL `data:` autorisées par `img-src`.
+
+`connect-src 'none'`
 interdit les connexions programmatiques couvertes par cette directive ; les objets
 embarqués, changements de base et soumissions de formulaires sont également bloqués.
 Cette politique complète l’insertion textuelle, sans remplacer la sécurité du
@@ -977,9 +980,9 @@ ou les spécimens publics déjà documentés.
 
 ### 11.1 Exécution locale
 
-Pour l’usage direct, ouvrir `index.html` avec un navigateur moderne. Node et pnpm
-servent au développement et ne sont pas requis pour le traitement du XML dans
-l’onglet. Le fonctionnement direct reste à confirmer dans les navigateurs visés.
+Pour l’usage direct, ouvrir `Peppol-Viewer-0.1.7.html` avec un navigateur moderne.
+Depuis les sources, le même fichier se trouve sous `dist/index.html` après le build.
+Node et pnpm servent au développement.
 
 Pour démarrer le serveur de développement, depuis le dossier du projet :
 
@@ -1022,25 +1025,16 @@ ni contrôle de types, ni pipeline CI configuré dans le dépôt.
 
 ### 11.3 Livrable statique
 
-Le build synchronise la version et crée `dist/` si nécessaire. Il place uniquement
-`index.html` à la racine, et `styles.css`, `parser.js`, `app.js`, `favicon.svg` et
-`mascot.png` dans `dist/assets/`. Les quatre chemins de chargement de l’HTML sont
-réécrits vers `./assets/`. La mascotte reste à côté de la feuille de style qui la
-référence. Tous ces chemins restent relatifs et se résolvent aussi en `file://`.
-Le build ne compile, ne minifie et ne valide pas le code. Les tests sont donc une
-commande distincte ; ils contrôlent également les ressources de cette distribution.
+Le build lit la version depuis `package.json`, la reporte dans le pied de page
+et génère `dist/index.html`. Il intègre `styles.css` dans un élément `style` et
+`parser.js` puis `app.js` dans deux éléments `script` placés après le contenu
+de la page. Il encode `favicon.svg` et `mascot.png` en base64 et insère leurs
+données dans le lien de l’icône et la règle CSS de la mascotte. Les règles
+d’impression et le dessin du bulletin sont inclus dans ce fichier.
 
-Le build retire uniquement les cinq anciens fichiers techniques directement sous
-`dist/`, après avoir écrit la nouvelle structure. Il ne supprime aucun autre fichier.
-Pour une publication, construire dans un checkout propre ou vérifier que la sortie
-contient seulement `index.html` et les cinq fichiers de `assets/`. Ne jamais y
-déposer de facture, secret ou archive personnelle. Les répertoires source `docs/`
-et `tests/` ne font pas partie de la distribution.
-
-Un hébergement statique peut distribuer le contenu de `dist/`, en conservant les
-chemins relatifs entre les six fichiers. L’application n’a besoin d’aucune variable
-d’environnement. [.env.example](../.env.example) le rappelle ; aucun secret ne doit
-être injecté dans les scripts publics.
+Le fichier peut être ouvert localement ou servi par un hébergeur statique.
+Pour modifier l’application, éditer les sources du dépôt et relancer le build
+afin de recalculer les empreintes de la politique de contenu (section 7.2).
 
 ### 11.4 Publication du code sur GitHub
 
@@ -1051,9 +1045,9 @@ installées, les archives et les factures personnelles ne font pas partie du dé
 
 Avant une distribution, exécuter les tests, renseigner la version dans
 `package.json` et les changements dans `CHANGELOG.md`, puis construire `dist/`.
-Distribuer `index.html` et son dossier `assets/` ensemble. Le code publié et les distributions restent
-utilisables localement ; la présence du dépôt sur GitHub n’active aucun envoi de
-facture ni hébergement de l’application.
+Pour la v0.1.7, le fichier à distribuer est une copie de `dist/index.html` nommée
+`Peppol-Viewer-0.1.7.html`. Les exemples et leur guide se trouvent dans le
+dossier `exemples/` du dépôt.
 
 Un changement exclusivement documentaire n’exige pas de redistribuer l’application :
 le document technique est destiné au dépôt, pas aux fichiers ouverts dans le navigateur.
